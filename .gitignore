@@ -1,0 +1,23 @@
+# Rust build artifacts
+/target/
+
+# WASM / Web build artifacts
+/dist/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Output & local draft files
+/node_modules/
+idea.md
+*.ods
+*_report.html
+
