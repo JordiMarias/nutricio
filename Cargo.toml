@@ -1,6 +1,6 @@
 [package]
-name = "nutricio"
-version = "0.1.2"
+name = "NutritionalPlanner"
+version = "0.1.3"
 edition = "2021"
 authors = ["Jordi Marias-i-Parella"]
 license = "MIT"
