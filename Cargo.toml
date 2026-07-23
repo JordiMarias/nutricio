@@ -1,10 +1,10 @@
 [package]
 name = "nutricio"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-authors = ["Jordi Mariàs"]
+authors = ["Jordi Marias-i-Parella"]
 license = "MIT"
-description = "Calculadora Nutricional, de Despesa Alimentària i Classificació NOVA en Rust (Desktop + WASM)"
+description = "A comprehensive, cross-platform nutritional calculator, food expenditure planner, and NOVA food classification app written in Rust using egui / eframe. It compiles seamlessly to native desktop executables (Linux, Windows, macOS) and WebAssembly (WASM) for web deployment."
 
 
 [dependencies]
@@ -27,8 +27,9 @@ reqwest = { version = "0.12", features = ["json"] }
 
 # Native desktop dependencies
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { version = "0.12", features = ["blocking", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking", "json"] }
 tokio = { version = "1.0", features = ["full"] }
+
 
 [build-dependencies]
 

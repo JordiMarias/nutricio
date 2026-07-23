@@ -142,16 +142,25 @@ To build and serve the application as a Web App using [Trunk](https://trunkrs.de
 
 ---
 
-## ⚙️ Continuous Integration (CI)
+## ⚙️ Continuous Integration (CI) & Automated Releases
 
 This repository includes a GitHub Actions workflow located at [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-The workflow automatically:
-1. Runs on every `push` and `pull_request` to `main` / `master`.
-2. Installs Linux GUI dependencies on `ubuntu-latest`.
-3. Runs `cargo test`.
-4. Compiles the native Linux desktop binary (`cargo build --release`).
-5. Uploads the built binary as a workflow artifact (`nutricio-linux-x86_64`).
+### Multi-Platform Build Matrix
+The pipeline automatically compiles for:
+- 🐧 **Linux x86_64 (Static MUSL)**: `nutricio-linux-x86_64-static`
+- 🤖 **Linux ARM64 / AArch64 (Static MUSL)**: `nutricio-linux-aarch64-static` (Raspberry Pi, ARM Cloud Servers)
+- 🪟 **Windows x86_64 (MSVC Native)**: `nutricio-windows-x86_64.exe`
+
+### 📦 Automated Releases via Git Tags
+Pushing a git tag formatted as `v*` (e.g. `v1.0.0`) automatically creates a **GitHub Release** and attaches binaries for all target platforms:
+
+```bash
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin v1.0.0
+```
+
+
 
 ---
 
