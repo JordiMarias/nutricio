@@ -19,40 +19,46 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-musl
+          - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            asset_name: nutricio-linux-x86_64-static
-            binary_path: target/x86_64-unknown-linux-musl/release/nutricio
+            asset_name: nutricio-linux-x86_64
+            binary_path: target/x86_64-unknown-linux-gnu/release/nutricio
 
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             asset_name: nutricio-windows-x86_64.exe
             binary_path: target/x86_64-pc-windows-msvc/release/nutricio.exe
 
-          - target: aarch64-unknown-linux-musl
+          - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            asset_name: nutricio-linux-aarch64-static
-            binary_path: target/aarch64-unknown-linux-musl/release/nutricio
+            asset_name: nutricio-linux-aarch64
+            binary_path: target/aarch64-unknown-linux-gnu/release/nutricio
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Linux & ARM64 dependencies
+      - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            musl-tools \
+            pkg-config \
+            libssl-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libgtk-3-dev \
+            libsoup-3.0-dev \
             gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            pkg-config
+            g++-aarch64-linux-gnu
 
-      - name: Configure Linker for Linux ARM64 MUSL
-        if: matrix.target == 'aarch64-unknown-linux-musl'
+      - name: Configure Linker for Linux ARM64 GNU
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -65,7 +71,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Run Tests (x86_64 Linux)
-        if: matrix.target == 'x86_64-unknown-linux-musl'
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: cargo test --verbose
 
       - name: Build Release Binary

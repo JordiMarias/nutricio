@@ -148,9 +148,10 @@ This repository includes a GitHub Actions workflow located at [`.github/workflow
 
 ### Multi-Platform Build Matrix
 The pipeline automatically compiles for:
-- 🐧 **Linux x86_64 (Static MUSL)**: `nutricio-linux-x86_64-static`
-- 🤖 **Linux ARM64 / AArch64 (Static MUSL)**: `nutricio-linux-aarch64-static` (Raspberry Pi, ARM Cloud Servers)
+- 🐧 **Linux x86_64 (GNU Desktop)**: `nutricio-linux-x86_64`
+- 🤖 **Linux ARM64 / AArch64 (GNU Desktop)**: `nutricio-linux-aarch64` (Raspberry Pi, ARM SBCs)
 - 🪟 **Windows x86_64 (MSVC Native)**: `nutricio-windows-x86_64.exe`
+
 
 ### 📦 Automated Releases via Git Tags
 Pushing a git tag formatted as `v*` (e.g. `v1.0.0`) automatically creates a **GitHub Release** and attaches binaries for all target platforms:
