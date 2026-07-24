@@ -1,6 +1,6 @@
-# 🍏 Nutrició & Despesa Alimentària
+# 🍏 Nutritional Planner
 
-[![CI & Build Linux Binary](https://github.com/USER/nutricio/actions/workflows/ci.yml/badge.svg)](https://github.com/USER/nutricio/actions/workflows/ci.yml)
+[![CI & Build Linux Binary](https://github.com/JordiMarias/NutritionalPlanner/actions/workflows/ci.yml/badge.svg)](https://github.com/JordiMarias/NutritionalPlanner/actions/workflows/ci.ymll)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org/)
 [![GUI](https://img.shields.io/badge/GUI-egui%200.29-blue.svg)](https://github.com/emilk/egui)
 [![Target](https://img.shields.io/badge/target-Desktop%20%7C%20WASM-green.svg)](#)
@@ -110,7 +110,7 @@ sudo apt-get install -y \
    ```bash
    cargo build --release
    ```
-   The generated executable will be placed in `target/release/nutricio`.
+   The generated executable will be placed in `target/release/NutritionalPlanner`.
 
 ---
 
@@ -148,9 +148,9 @@ This repository includes a GitHub Actions workflow located at [`.github/workflow
 
 ### Multi-Platform Build Matrix
 The pipeline automatically compiles for:
-- 🐧 **Linux x86_64 (GNU Desktop)**: `nutricio-linux-x86_64`
-- 🤖 **Linux ARM64 / AArch64 (GNU Desktop)**: `nutricio-linux-aarch64` (Raspberry Pi, ARM SBCs)
-- 🪟 **Windows x86_64 (MSVC Native)**: `nutricio-windows-x86_64.exe`
+- 🐧 **Linux x86_64 (GNU Desktop)**: `NutritionalPlanner-linux-x86_64`
+- 🤖 **Linux ARM64 / AArch64 (GNU Desktop)**: `NutritionalPlanner-linux-aarch64` (Raspberry Pi, ARM SBCs)
+- 🪟 **Windows x86_64 (MSVC Native)**: `NutritionalPlanner-windows-x86_64.exe`
 
 
 ### 📦 Automated Releases via Git Tags

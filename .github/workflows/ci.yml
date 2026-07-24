@@ -21,13 +21,13 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             zig_target: x86_64-unknown-linux-gnu.2.17
-            asset_name: nutricio-linux-x86_64
-            binary_path: target/x86_64-unknown-linux-gnu/release/nutricio
+            asset_name: NutritionalPlanner-linux-x86_64
+            binary_path: target/x86_64-unknown-linux-gnu/release/NutritionalPlanner
 
           - target: aarch64-unknown-linux-gnu
             zig_target: aarch64-unknown-linux-gnu.2.17
-            asset_name: nutricio-linux-aarch64
-            binary_path: target/aarch64-unknown-linux-gnu/release/nutricio
+            asset_name: NutritionalPlanner-linux-aarch64
+            binary_path: target/aarch64-unknown-linux-gnu/release/NutritionalPlanner
 
     steps:
       - name: Checkout repository
@@ -106,13 +106,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist_bins
-          cp target/x86_64-pc-windows-msvc/release/nutricio.exe dist_bins/nutricio-windows-x86_64.exe
+          cp target/x86_64-pc-windows-msvc/release/NutritionalPlanner.exe dist_bins/NutritionalPlanner-windows-x86_64.exe
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nutricio-windows-x86_64.exe
-          path: dist_bins/nutricio-windows-x86_64.exe
+          name: NutritionalPlanner-windows-x86_64.exe
+          path: dist_bins/NutritionalPlanner-windows-x86_64.exe
 
   release:
     name: Create Multi-Platform GitHub Release
