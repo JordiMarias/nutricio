@@ -202,13 +202,13 @@ pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> Stri
     let prot_p = day_nut.protein_pct();
 
     html.push_str(&format!(
-        "<li><strong>Greixos:</strong> {:.1}% (Rec: {:.0}-{:.0}%) - {}</li>\n",
-        fat_p, goals.min_fat_pct, goals.max_fat_pct,
+        "<li><strong>Greixos:</strong> {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%) - {}</li>\n",
+        fat_p, day_nut.fat_g, goals.min_fat_pct, goals.max_fat_pct,
         if fat_p >= goals.min_fat_pct && fat_p <= goals.max_fat_pct { "<span class=\"status-ok\">OK</span>" } else { "<span class=\"status-warn\">Ajustar</span>" }
     ));
     html.push_str(&format!(
-        "<li><strong>Hidrats de Carboni:</strong> {:.1}% (Rec: {:.0}-{:.0}%) - {}</li>\n",
-        carb_p, goals.min_carbs_pct, goals.max_carbs_pct,
+        "<li><strong>Hidrats de Carboni:</strong> {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%) - {}</li>\n",
+        carb_p, day_nut.carbs_g, goals.min_carbs_pct, goals.max_carbs_pct,
         if carb_p >= goals.min_carbs_pct && carb_p <= goals.max_carbs_pct { "<span class=\"status-ok\">OK</span>" } else { "<span class=\"status-warn\">Ajustar</span>" }
     ));
     html.push_str(&format!(
@@ -216,8 +216,8 @@ pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> Stri
         prot_p, day_nut.protein_g, goals.min_protein_pct, goals.max_protein_pct, goals.min_protein_g,
         if day_nut.protein_g >= goals.min_protein_g { "<span class=\"status-ok\">OK</span>" } else { "<span class=\"status-alert\">Manca proteïna</span>" }
     ));
-    html.push_str("</ul>\n    <p><small>Total grams de macronutrients: ");
-    html.push_str(&format!("{:.1} g</small></p>\n    </div>\n", total_g));
+    html.push_str("</ul>\n    <p><small>Total Kcal de macronutrients: ");
+    html.push_str(&format!("{:.0} Kcal ({:.1} g totals)</small></p>\n    </div>\n", day_nut.total_macro_kcal(), total_g));
 
     html.push_str(r#"
     <div class="card">
@@ -300,6 +300,116 @@ pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> Stri
 </body>
 </html>
 "#);
+
+    html
+}
+
+pub fn generate_shopping_list_report_html(state: &AppState) -> String {
+    use std::collections::HashMap;
+
+    let mut html = String::new();
+
+    let mut ingredient_quantities: HashMap<String, f64> = HashMap::new();
+    let mut total_weekly_cost = 0.0;
+
+    for day in &state.weekly_menu.days {
+        for entries in day.meals.values() {
+            for entry in entries {
+                if entry.is_dish {
+                    if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
+                        for item in &dish.items {
+                            *ingredient_quantities.entry(item.ingredient_id.clone()).or_insert(0.0) += item.quantity * entry.quantity;
+                        }
+                    }
+                } else {
+                    *ingredient_quantities.entry(entry.item_id.clone()).or_insert(0.0) += entry.quantity;
+                }
+            }
+        }
+    }
+
+    let mut items: Vec<(String, f64)> = ingredient_quantities.into_iter().collect();
+    items.sort_by(|(id_a, _), (id_b, _)| {
+        let name_a = state.ingredients.iter().find(|i| &i.id == id_a).map(|i| i.name.as_str()).unwrap_or(id_a);
+        let name_b = state.ingredients.iter().find(|i| &i.id == id_b).map(|i| i.name.as_str()).unwrap_or(id_b);
+        name_a.cmp(name_b)
+    });
+
+    html.push_str(r#"<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<title>Llista de la Compra - Nutrició App</title>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1a1a1a; background-color: #fff; line-height: 1.5; }
+    h1 { color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 6px; margin-bottom: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
+    th { background-color: #f5f5f5; font-weight: bold; }
+    tr:nth-child(even) { background-color: #fafafa; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+    .nova-1 { background-color: #2e7d32; }
+    .nova-2 { background-color: #f57c00; }
+    .nova-3 { background-color: #e65100; }
+    .nova-4 { background-color: #c62828; }
+    .total-card { background-color: #e8f5e9; border: 1px solid #c8e6c9; padding: 14px 18px; border-radius: 4px; margin-top: 20px; }
+    .total-card h2 { margin: 0; color: #2e7d32; font-size: 18px; }
+    @media print {
+        body { margin: 0; font-size: 12px; }
+        .no-print { display: none; }
+    }
+</style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+        <button onclick="window.print()" style="padding: 10px 22px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">🖨️ Imprimir / Desar com a PDF</button>
+    </div>
+
+    <h1>🛒 Llista de la Compra Setmanal</h1>
+    <p style="color: #666; font-size: 13px; margin-top: 0;">Ingredients i productes necessaris per al menú planificat</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aliment</th>
+                <th>Grup NOVA</th>
+                <th>Quantitat Total Setmanal</th>
+                <th>Cost Estimat (€)</th>
+            </tr>
+        </thead>
+        <tbody>
+"#);
+
+    for (ing_id, total_qty) in items {
+        if let Some(ing) = state.ingredients.iter().find(|i| i.id == ing_id) {
+            let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+            let nova_class = match nova {
+                NovaGroup::Group1Unprocessed => "nova-1",
+                NovaGroup::Group2ProcessedIngredient => "nova-2",
+                NovaGroup::Group3Processed => "nova-3",
+                NovaGroup::Group4UltraProcessed => "nova-4",
+            };
+
+            let qty_str = match ing.unit_type {
+                UnitType::Per100g => format!("{:.0} g", total_qty),
+                UnitType::PerUnit { .. } => format!("{:.1} unitats", total_qty),
+            };
+
+            let nut = ing.calculate_nutrition(total_qty);
+            total_weekly_cost += nut.price_euro;
+
+            html.push_str(&format!(
+                "<tr><td>🥗 {}</td><td><span class=\"badge {}\">{}</span></td><td>{}</td><td>{:.2} €</td></tr>\n",
+                ing.name, nova_class, nova.short_name_ca(), qty_str, nut.price_euro
+            ));
+        }
+    }
+
+    html.push_str("</tbody></table>\n");
+    html.push_str(&format!(
+        "<div class=\"total-card\"><h2>💰 Cost Estimat Total Setmanal: {:.2} €</h2></div>\n</body>\n</html>\n",
+        total_weekly_cost
+    ));
 
     html
 }

@@ -43,8 +43,36 @@ impl ShoppingListView {
                         self.status_message = None;
                     }
                 }
+                if ui.button("🖨️ Imprimir / Desar Llista (HTML/PDF)").clicked() {
+                    let html = crate::exporter::generate_shopping_list_report_html(state);
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("Document HTML (PDF)", &["html"])
+                            .set_file_name("llista_compra_setmanal.html")
+                            .set_title("Guardar Llista de la Compra")
+                            .save_file()
+                        {
+                            if std::fs::write(&path, &html).is_ok() {
+                                self.status_message = Some(format!("💾 Llista desada amb èxit a: {}", path.display()));
+                            } else {
+                                self.status_message = Some("❌ Error en escriure el fitxer en disc".into());
+                            }
+                        }
+                    }
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        let _ = html;
+                        self.status_message = Some("✅ Informe de la llista de la compra generat".into());
+                    }
+                }
             });
         });
+
+        if let Some(msg) = &self.status_message {
+            ui.add_space(4.0);
+            ui.colored_label(egui::Color32::GREEN, msg);
+        }
 
         ui.separator();
 
@@ -68,10 +96,18 @@ impl ShoppingListView {
             }
         }
 
+        // Sort items deterministically by ingredient name to prevent shuffling on UI repaint frames
+        let mut sorted_items: Vec<(String, f64)> = ingredient_quantities.into_iter().collect();
+        sorted_items.sort_by(|(id_a, _), (id_b, _)| {
+            let name_a = state.ingredients.iter().find(|i| &i.id == id_a).map(|i| i.name.as_str()).unwrap_or(id_a);
+            let name_b = state.ingredients.iter().find(|i| &i.id == id_b).map(|i| i.name.as_str()).unwrap_or(id_b);
+            name_a.cmp(name_b)
+        });
+
         ui.heading("🛒 Llista d'Ingredients Necessaris per la Setmana:");
         ui.add_space(4.0);
 
-        if ingredient_quantities.is_empty() {
+        if sorted_items.is_empty() {
             ui.label("El menú setmanal està buit. Afaga aliments als àpats per generar la llista de la compra.");
         } else {
             egui::ScrollArea::vertical().show(ui, |ui| {
@@ -85,7 +121,7 @@ impl ShoppingListView {
                         ui.strong("Cost Estimat (€)");
                         ui.end_row();
 
-                        for (ing_id, total_qty) in &ingredient_quantities {
+                        for (ing_id, total_qty) in &sorted_items {
                             if let Some(ing) = state.ingredients.iter().find(|i| i.id == *ing_id) {
                                 ui.label(&ing.name);
 

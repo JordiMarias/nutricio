@@ -279,14 +279,15 @@ impl MenuPlannerView {
                 ui.add_space(4.0);
 
                 ui.group(|ui| {
-                    ui.strong("📊 Repartiment de Macronutrients (% de grams)");
+                    ui.strong("📊 Repartiment de Macronutrients (% de Kcal)");
                     let total_g = total_nut.total_macro_grams();
-                    ui.label(format!("Total grams de macronutrients: {:.1} g", total_g));
+                    let total_mkcal = total_nut.total_macro_kcal();
+                    ui.label(format!("Total Kcal de macronutrients: {:.0} Kcal ({:.1} g totals)", total_mkcal, total_g));
 
-                    // Fat %
+                    // Fat % & g
                     let fat_p = total_nut.fat_pct();
                     ui.horizontal(|ui| {
-                        ui.label(format!("• Greixos: {:.1}% (Rec: {:.0}-{:.0}%)", fat_p, goals.min_fat_pct, goals.max_fat_pct));
+                        ui.label(format!("• Greixos: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%)", fat_p, total_nut.fat_g, goals.min_fat_pct, goals.max_fat_pct));
                         if fat_p >= goals.min_fat_pct && fat_p <= goals.max_fat_pct {
                             ui.colored_label(Color32::GREEN, "OK");
                         } else {
@@ -294,10 +295,10 @@ impl MenuPlannerView {
                         }
                     });
 
-                    // Carbs %
+                    // Carbs % & g
                     let carb_p = total_nut.carbs_pct();
                     ui.horizontal(|ui| {
-                        ui.label(format!("• Hidrats Carboni: {:.1}% (Rec: {:.0}-{:.0}%)", carb_p, goals.min_carbs_pct, goals.max_carbs_pct));
+                        ui.label(format!("• Hidrats Carboni: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%)", carb_p, total_nut.carbs_g, goals.min_carbs_pct, goals.max_carbs_pct));
                         if carb_p >= goals.min_carbs_pct && carb_p <= goals.max_carbs_pct {
                             ui.colored_label(Color32::GREEN, "OK");
                         } else {

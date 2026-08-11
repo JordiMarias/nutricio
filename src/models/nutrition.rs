@@ -64,24 +64,40 @@ impl NutritionalInfo {
         self.fat_g + self.carbs_g + self.protein_g
     }
 
+    pub fn fat_kcal(&self) -> f64 {
+        self.fat_g * 9.0
+    }
+
+    pub fn protein_kcal(&self) -> f64 {
+        self.protein_g * 4.0
+    }
+
+    pub fn carbs_kcal(&self) -> f64 {
+        self.carbs_g * 4.0
+    }
+
+    pub fn total_macro_kcal(&self) -> f64 {
+        self.fat_kcal() + self.protein_kcal() + self.carbs_kcal()
+    }
+
     pub fn fat_pct(&self) -> f64 {
-        let total = self.total_macro_grams();
-        if total > 0.0 { (self.fat_g / total) * 100.0 } else { 0.0 }
+        let total_kcal = self.total_macro_kcal();
+        if total_kcal > 0.0 { (self.fat_kcal() / total_kcal) * 100.0 } else { 0.0 }
     }
 
     pub fn carbs_pct(&self) -> f64 {
-        let total = self.total_macro_grams();
-        if total > 0.0 { (self.carbs_g / total) * 100.0 } else { 0.0 }
+        let total_kcal = self.total_macro_kcal();
+        if total_kcal > 0.0 { (self.carbs_kcal() / total_kcal) * 100.0 } else { 0.0 }
     }
 
     pub fn protein_pct(&self) -> f64 {
-        let total = self.total_macro_grams();
-        if total > 0.0 { (self.protein_g / total) * 100.0 } else { 0.0 }
+        let total_kcal = self.total_macro_kcal();
+        if total_kcal > 0.0 { (self.protein_kcal() / total_kcal) * 100.0 } else { 0.0 }
     }
 
     pub fn sugar_pct_of_macros(&self) -> f64 {
-        let total = self.total_macro_grams();
-        if total > 0.0 { (self.sugars_g / total) * 100.0 } else { 0.0 }
+        let total_kcal = self.total_macro_kcal();
+        if total_kcal > 0.0 { ((self.sugars_g * 4.0) / total_kcal) * 100.0 } else { 0.0 }
     }
 }
 

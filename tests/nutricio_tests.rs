@@ -23,9 +23,10 @@ mod tests {
         let carbs_pct = total.carbs_pct();
         let prot_pct = total.protein_pct();
 
-        assert!((fat_pct - 20.19).abs() < 2.0, "Expected Fat % around 20.19%, got {:.2}", fat_pct);
-        assert!((carbs_pct - 42.99).abs() < 5.0, "Expected Carbs % around 42.99%, got {:.2}", carbs_pct);
-        assert!((prot_pct - 36.82).abs() < 5.0, "Expected Protein % around 36.82%, got {:.2}", prot_pct);
+        // Caloric macro percentages: Fat (9 kcal/g), Carbs (4 kcal/g), Protein (4 kcal/g)
+        assert!((fat_pct - 36.27).abs() < 2.0, "Expected Fat Kcal % around 36.27%, got {:.2}", fat_pct);
+        assert!((carbs_pct - 34.33).abs() < 3.0, "Expected Carbs Kcal % around 34.33%, got {:.2}", carbs_pct);
+        assert!((prot_pct - 29.40).abs() < 3.0, "Expected Protein Kcal % around 29.40%, got {:.2}", prot_pct);
     }
 
     #[test]
@@ -149,6 +150,15 @@ mod tests {
         // Portion of 100g: 48g carbs -> CG = (35 * 48) / 100 = 16.8
         let cg = ing_lentils.calculate_glycemic_load(100.0);
         assert!((cg - 16.8).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_shopping_list_html_generation() {
+        let state = nutricio::storage::AppState::with_seed_data();
+        let html = nutricio::exporter::generate_shopping_list_report_html(&state);
+        assert!(html.contains("🛒 Llista de la Compra Setmanal"));
+        assert!(html.contains("window.print()"));
+        assert!(html.contains("Cost Estimat Total Setmanal"));
     }
 }
 
