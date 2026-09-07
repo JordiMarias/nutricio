@@ -4,7 +4,7 @@ mod models;
 mod scraper;
 mod storage;
 mod views;
-
+mod web_utils;
 
 use app::NutricioApp;
 

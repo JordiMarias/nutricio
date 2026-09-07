@@ -3,9 +3,13 @@
 <head>
     <meta charset="utf-8">
     <title>Nutrició & Despesa Alimentària | Planificador Nutricional</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
     <meta name="description" content="Calculadora nutricional, planificador de menús diaris/setmanals, control de despesa alimentària i classificació NOVA.">
-    <link rel="rust" data-trunk rel="wasm" href="Cargo.toml" />
+    <link rel="rust" data-trunk rel="wasm" href="Cargo.toml" data-wasm-opt="0" />
     <style>
         html, body {
             margin: 0;
@@ -15,10 +19,16 @@
             overflow: hidden;
             background-color: #121212;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            touch-action: pan-x pan-y;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         canvas {
             width: 100%;
             height: 100%;
+            display: block;
+            touch-action: none;
         }
         #centered-loader {
             position: absolute;

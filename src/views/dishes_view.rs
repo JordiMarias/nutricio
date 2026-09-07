@@ -36,10 +36,11 @@ impl DishesView {
         ui.heading("Editor de Plats i Receptes Combinades");
         ui.add_space(8.0);
 
-        ui.horizontal(|ui| {
-            ui.label("Agrega diversos ingredients per formar plats i calcula automàticament els seus valors nutricionals.");
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("🍲 Crear Nou Plat / Recepta").clicked() {
+        let is_mobile = ui.ctx().screen_rect().width() < 750.0 || ui.available_width() < 750.0;
+
+        if is_mobile {
+            ui.horizontal(|ui| {
+                if ui.button("🍲 Crear Nou Plat").clicked() {
                     self.show_create_dish_modal = true;
                     self.editing_dish_id = None;
                     self.dish_name.clear();
@@ -50,107 +51,126 @@ impl DishesView {
                     self.add_ing_quantity = 100.0;
                 }
             });
-        });
+        } else {
+            ui.horizontal(|ui| {
+                ui.label("Agrega diversos ingredients per formar plats i calcula automàticament els seus valors nutricionals.");
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("🍲 Crear Nou Plat / Recepta").clicked() {
+                        self.show_create_dish_modal = true;
+                        self.editing_dish_id = None;
+                        self.dish_name.clear();
+                        self.dish_desc.clear();
+                        self.dish_items.clear();
+                        self.selected_add_ing_id.clear();
+                        self.search_ing_query.clear();
+                        self.add_ing_quantity = 100.0;
+                    }
+                });
+            });
+        }
 
         ui.separator();
 
         // Grid of Dishes
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            let mut to_edit = None;
-            let mut to_delete = None;
+        let mut to_edit = None;
+        let mut to_delete = None;
 
-            for (idx, dish) in state.dishes.iter().enumerate() {
-                ui.group(|ui| {
-                    ui.horizontal(|ui| {
-                        let nova = dish.derived_nova_group(&state.ingredients);
-                        crate::views::menu_planner::draw_nova_badge(ui, nova);
-                        ui.heading(&dish.name);
-                        
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("🗑️ Eliminar").clicked() {
-                                to_delete = Some(idx);
-                            }
-                            if ui.button("✏️ Editar").clicked() {
-                                to_edit = Some(dish.clone());
-                            }
-                        });
-                    });
-
-                    if let Some(desc) = &dish.description {
-                        ui.label(desc);
-                    }
-
-                    ui.add_space(4.0);
-
-                    // Dish Nutrition Summary
-                    let nut = dish.calculate_total_nutrition(&state.ingredients);
-                    ui.horizontal(|ui| {
-                        ui.label(format!("⚡ Kcal: {:.0} | 🥑 Greixos: {:.1}g (Sat: {:.1}g) | 🌾 HdC: {:.1}g (Sucres: {:.1}g) | 🥬 Fibra: {:.1}g | 🥩 Proteïna: {:.1}g | 🧂 Sal: {:.2}g | 💶 Preu: {:.2}€",
-                            nut.kcal, nut.fat_g, nut.saturated_fat_g, nut.carbs_g, nut.sugars_g, nut.fiber_g, nut.protein_g, nut.salt_g, nut.price_euro));
-                    });
-
-                    ui.add_space(2.0);
-
-                    // NOVA Percentages Breakdown
-                    ui.horizontal_wrapped(|ui| {
-                        ui.label("📊 Desglossament NOVA:");
-                        let breakdown = dish.nova_breakdown(&state.ingredients);
-                        let total_k = nut.kcal;
-                        for grp in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
-                            let k = breakdown.get(&grp).copied().unwrap_or(0.0);
-                            let pct = if total_k > 0.0 { (k / total_k) * 100.0 } else { 0.0 };
-                            crate::views::menu_planner::draw_nova_badge(ui, grp);
-                            ui.label(format!("{:.1}% ({:.0} Kcal)", pct, k));
-                            ui.add_space(4.0);
+        for (idx, dish) in state.dishes.iter().enumerate() {
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    let nova = dish.derived_nova_group(&state.ingredients);
+                    crate::views::menu_planner::draw_nova_badge(ui, nova);
+                    ui.heading(&dish.name);
+                    
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("🗑 Eliminar").clicked() {
+                            to_delete = Some(idx);
+                        }
+                        if ui.button("✏ Editar").clicked() {
+                            to_edit = Some(dish.clone());
                         }
                     });
+                });
 
-                    ui.separator();
-                    ui.label("Ingredients inclosos:");
-                    if dish.items.is_empty() {
-                        ui.label(" (Cap ingredient especificat)");
-                    } else {
-                        for item in &dish.items {
-                            if let Some(ing) = state.ingredients.iter().find(|i| i.id == item.ingredient_id) {
-                                let qty_str = match ing.unit_type {
-                                    UnitType::Per100g => {
-                                        if item.quantity.fract() == 0.0 {
-                                            format!("{:.0} g", item.quantity)
-                                        } else {
-                                            format!("{:.1} g", item.quantity)
-                                        }
-                                    }
-                                    UnitType::PerUnit { .. } => {
-                                        if item.quantity.fract() == 0.0 {
-                                            format!("{:.0} unitats", item.quantity)
-                                        } else {
-                                            format!("{:.1} unitats", item.quantity)
-                                        }
-                                    }
-                                };
-                                ui.label(format!("  • {} - {}", ing.name, qty_str));
-                            }
-                        }
+                if let Some(desc) = &dish.description {
+                    ui.label(desc);
+                }
+
+                ui.add_space(4.0);
+
+                // Dish Nutrition Summary
+                let nut = dish.calculate_total_nutrition(&state.ingredients);
+                ui.horizontal_wrapped(|ui| {
+                    ui.colored_label(egui::Color32::from_rgb(255, 180, 80), format!("⚡ {:.0} Kcal", nut.kcal));
+                    ui.label(format!("• 🥑 Greixos: {:.1}g (Sat: {:.1}g)", nut.fat_g, nut.saturated_fat_g));
+                    ui.label(format!("• 🌾 HdC: {:.1}g (Sucres: {:.1}g)", nut.carbs_g, nut.sugars_g));
+                    ui.label(format!("• 🥬 Fibra: {:.1}g", nut.fiber_g));
+                    ui.label(format!("• 🥩 Proteïna: {:.1}g", nut.protein_g));
+                    ui.label(format!("• 🧂 Sal: {:.2}g", nut.salt_g));
+                    ui.colored_label(egui::Color32::from_rgb(130, 220, 130), format!("• 💶 {:.2}€", nut.price_euro));
+                });
+
+                ui.add_space(2.0);
+
+                // NOVA Percentages Breakdown
+                ui.horizontal_wrapped(|ui| {
+                    ui.label("📊 Desglossament NOVA:");
+                    let breakdown = dish.nova_breakdown(&state.ingredients);
+                    let total_k = nut.kcal;
+                    for grp in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
+                        let k = breakdown.get(&grp).copied().unwrap_or(0.0);
+                        let pct = if total_k > 0.0 { (k / total_k) * 100.0 } else { 0.0 };
+                        crate::views::menu_planner::draw_nova_badge(ui, grp);
+                        ui.label(format!("{:.1}% ({:.0} Kcal)", pct, k));
+                        ui.add_space(4.0);
                     }
                 });
-                ui.add_space(8.0);
-            }
 
-            if let Some(dish_to_edit) = to_edit {
-                self.show_create_dish_modal = true;
-                self.editing_dish_id = Some(dish_to_edit.id);
-                self.dish_name = dish_to_edit.name;
-                self.dish_desc = dish_to_edit.description.unwrap_or_default();
-                self.dish_items = dish_to_edit.items;
-                self.selected_add_ing_id.clear();
-                self.search_ing_query.clear();
-                self.add_ing_quantity = 100.0;
-            }
+                ui.separator();
+                ui.label("Ingredients inclosos:");
+                if dish.items.is_empty() {
+                    ui.label(" (Cap ingredient especificat)");
+                } else {
+                    for item in &dish.items {
+                        if let Some(ing) = state.ingredients.iter().find(|i| i.id == item.ingredient_id) {
+                            let qty_str = match ing.unit_type {
+                                UnitType::Per100g => {
+                                    if item.quantity.fract() == 0.0 {
+                                        format!("{:.0} g", item.quantity)
+                                    } else {
+                                        format!("{:.1} g", item.quantity)
+                                    }
+                                }
+                                UnitType::PerUnit { .. } => {
+                                    if item.quantity.fract() == 0.0 {
+                                        format!("{:.0} unitats", item.quantity)
+                                    } else {
+                                        format!("{:.1} unitats", item.quantity)
+                                    }
+                                }
+                            };
+                            ui.label(format!("  • {} - {}", ing.name, qty_str));
+                        }
+                    }
+                }
+            });
+            ui.add_space(8.0);
+        }
 
-            if let Some(del_idx) = to_delete {
-                state.dishes.remove(del_idx);
-            }
-        });
+        if let Some(dish_to_edit) = to_edit {
+            self.show_create_dish_modal = true;
+            self.editing_dish_id = Some(dish_to_edit.id);
+            self.dish_name = dish_to_edit.name;
+            self.dish_desc = dish_to_edit.description.unwrap_or_default();
+            self.dish_items = dish_to_edit.items;
+            self.selected_add_ing_id.clear();
+            self.search_ing_query.clear();
+            self.add_ing_quantity = 100.0;
+        }
+
+        if let Some(del_idx) = to_delete {
+            state.dishes.remove(del_idx);
+        }
 
         // MODAL: Create / Edit Dish
         if self.show_create_dish_modal {

@@ -4,12 +4,13 @@ version = 4
 
 [[package]]
 name = "NutritionalPlanner"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "console_error_panic_hook",
  "eframe",
  "egui",
  "env_logger",
+ "js-sys",
  "log",
  "regex",
  "reqwest",
@@ -20,6 +21,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "web-time",
 ]
 
 [[package]]

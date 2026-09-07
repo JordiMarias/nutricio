@@ -1,5 +1,6 @@
 use egui::Ui;
 use std::collections::HashMap;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use crate::models::*;
 use crate::storage::{save_state_to_json, load_state_from_json, AppState};
 
@@ -9,64 +10,163 @@ pub struct ShoppingListView {
     pub show_export_dialog: bool,
     pub show_import_dialog: bool,
     pub status_message: Option<String>,
+    pub pending_import_tx: Sender<Result<AppState, String>>,
+    pub pending_import_rx: Receiver<Result<AppState, String>>,
 }
 
 impl Default for ShoppingListView {
     fn default() -> Self {
+        let (tx, rx) = channel();
         Self {
             exported_json: String::new(),
             imported_json: String::new(),
             show_export_dialog: false,
             show_import_dialog: false,
             status_message: None,
+            pending_import_tx: tx,
+            pending_import_rx: rx,
         }
     }
 }
 
 impl ShoppingListView {
     pub fn ui(&mut self, ui: &mut Ui, state: &mut AppState) {
-        ui.heading("Llista de la Compra i Gestió de Dades");
-        ui.add_space(8.0);
+        // Process any async loaded state from file picker
+        while let Ok(res) = self.pending_import_rx.try_recv() {
+            match res {
+                Ok(new_state) => {
+                    *state = new_state;
+                    self.status_message = Some("✅ Dades carregades correctament des del fitxer!".into());
+                }
+                Err(e) => {
+                    self.status_message = Some(format!("❌ {}", e));
+                }
+            }
+        }
 
-        ui.horizontal(|ui| {
-            ui.label("Generació automàtica dels ingredients necessaris per completar el menú setmanal definit.");
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("📥 Importar Dades (JSON)").clicked() {
-                    self.show_import_dialog = true;
-                    self.imported_json.clear();
-                    self.status_message = None;
-                }
-                if ui.button("💾 Exportar Dades (JSON)").clicked() {
-                    if let Ok(json) = save_state_to_json(state) {
-                        self.exported_json = json;
-                        self.show_export_dialog = true;
-                        self.status_message = None;
-                    }
-                }
-                if ui.button("🖨️ Imprimir / Desar Llista (HTML/PDF)").clicked() {
-                    let html = crate::exporter::generate_shopping_list_report_html(state);
-                    #[cfg(not(target_arch = "wasm32"))]
+        ui.heading("Llista de la Compra i Gestió de Dades");
+        ui.add_space(6.0);
+
+        let is_mobile = ui.available_width() < 720.0;
+
+        ui.horizontal_wrapped(|ui| {
+            if ui.button("📂 Carregar Fitxer (JSON)").clicked() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("JSON", &["json"])
+                        .set_title("Carregar Estat")
+                        .pick_file()
                     {
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("Document HTML (PDF)", &["html"])
-                            .set_file_name("llista_compra_setmanal.html")
-                            .set_title("Guardar Llista de la Compra")
-                            .save_file()
-                        {
-                            if std::fs::write(&path, &html).is_ok() {
-                                self.status_message = Some(format!("💾 Llista desada amb èxit a: {}", path.display()));
-                            } else {
-                                self.status_message = Some("❌ Error en escriure el fitxer en disc".into());
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            match load_state_from_json(&content) {
+                                Ok(new_state) => {
+                                    *state = new_state;
+                                    self.status_message = Some("✅ Dades carregades amb èxit!".into());
+                                }
+                                Err(e) => {
+                                    self.status_message = Some(format!("❌ Error JSON: {}", e));
+                                }
                             }
                         }
                     }
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        let _ = html;
-                        self.status_message = Some("✅ Informe de la llista de la compra generat".into());
+                }
+
+                #[cfg(target_arch = "wasm32")]
+                {
+                    let tx = self.pending_import_tx.clone();
+                    wasm_bindgen_futures::spawn_local(async move {
+                        let file = rfd::AsyncFileDialog::new()
+                            .add_filter("JSON", &["json"])
+                            .set_title("Carregar Fitxer JSON")
+                            .pick_file()
+                            .await;
+                        if let Some(handle) = file {
+                            let bytes = handle.read().await;
+                            match String::from_utf8(bytes) {
+                                Ok(text) => match load_state_from_json(&text) {
+                                    Ok(new_state) => {
+                                        let _ = tx.send(Ok(new_state));
+                                    }
+                                    Err(e) => {
+                                        let _ = tx.send(Err(format!("Error en el format JSON: {}", e)));
+                                    }
+                                },
+                                Err(e) => {
+                                    let _ = tx.send(Err(format!("Fitxer no vàlid: {}", e)));
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            if ui.button("💾 Desar Fitxer (JSON)").clicked() {
+                match save_state_to_json(state) {
+                    Ok(json) => {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("JSON", &["json"])
+                                .set_file_name("nutricio_estat.json")
+                                .set_title("Guardar Estat JSON")
+                                .save_file()
+                            {
+                                if std::fs::write(&path, &json).is_ok() {
+                                    self.status_message = Some(format!("💾 Fitxer desat a: {}", path.display()));
+                                } else {
+                                    self.status_message = Some("❌ Error en escriure el fitxer".into());
+                                }
+                            }
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            if let Err(e) = crate::web_utils::web::download_file("nutricio_estat.json", "application/json", json.as_bytes()) {
+                                self.status_message = Some(format!("❌ Error en descarregar fitxer: {:?}", e));
+                            } else {
+                                self.status_message = Some("💾 S'ha descarregat nutricio_estat.json!".into());
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        self.status_message = Some(format!("❌ Error en serialitzar JSON: {}", e));
                     }
                 }
-            });
+            }
+
+            if ui.button("🖨️ Descarregar Llista (HTML)").clicked() {
+                let html = crate::exporter::generate_shopping_list_report_html(state);
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("Document HTML", &["html"])
+                        .set_file_name("llista_compra_setmanal.html")
+                        .set_title("Guardar Llista de la Compra")
+                        .save_file()
+                    {
+                        if std::fs::write(&path, &html).is_ok() {
+                            self.status_message = Some(format!("💾 Llista desada a: {}", path.display()));
+                        } else {
+                            self.status_message = Some("❌ Error en escriure el fitxer".into());
+                        }
+                    }
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    if let Err(e) = crate::web_utils::web::download_file("llista_compra_setmanal.html", "text/html", html.as_bytes()) {
+                        self.status_message = Some(format!("❌ Error en descarregar HTML: {:?}", e));
+                    } else {
+                        self.status_message = Some("💾 S'ha descarregat llista_compra_setmanal.html!".into());
+                    }
+                }
+            }
+
+            if ui.button("📝 Enganxar text JSON").clicked() {
+                self.show_import_dialog = true;
+                self.imported_json.clear();
+                self.status_message = None;
+            }
         });
 
         if let Some(msg) = &self.status_message {
@@ -108,9 +208,37 @@ impl ShoppingListView {
         ui.add_space(4.0);
 
         if sorted_items.is_empty() {
-            ui.label("El menú setmanal està buit. Afaga aliments als àpats per generar la llista de la compra.");
+            ui.label("El menú setmanal està buit. Afegeix aliments als àpats per generar la llista de la compra.");
         } else {
-            egui::ScrollArea::vertical().show(ui, |ui| {
+            if is_mobile {
+                // Mobile Cards
+                for (ing_id, total_qty) in &sorted_items {
+                    if let Some(ing) = state.ingredients.iter().find(|i| i.id == *ing_id) {
+                        let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                        let qty_str = match ing.unit_type {
+                            UnitType::Per100g => format!("{:.0} g", total_qty),
+                            UnitType::PerUnit { .. } => format!("{:.1} unitats", total_qty),
+                        };
+                        let nut = ing.calculate_nutrition(*total_qty);
+                        total_weekly_cost += nut.price_euro;
+
+                        ui.group(|ui| {
+                            ui.horizontal(|ui| {
+                                crate::views::menu_planner::draw_nova_badge(ui, nova);
+                                ui.strong(&ing.name);
+                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                    ui.colored_label(egui::Color32::from_rgb(130, 220, 130), format!("{:.2} €", nut.price_euro));
+                                });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label(format!("Quantitat total: {}", qty_str));
+                            });
+                        });
+                        ui.add_space(2.0);
+                    }
+                }
+            } else {
+                // Desktop Grid
                 egui::Grid::new("shopping_grid")
                     .striped(true)
                     .spacing([16.0, 8.0])
@@ -142,7 +270,7 @@ impl ShoppingListView {
                             }
                         }
                     });
-            });
+            }
 
             ui.separator();
             ui.group(|ui| {

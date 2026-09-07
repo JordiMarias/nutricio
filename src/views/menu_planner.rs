@@ -38,18 +38,12 @@ impl MenuPlannerView {
         ui.heading("Planificador de Menú Diari i Setmanal");
         ui.add_space(6.0);
 
-        // Day Selector Buttons + Action Bar (PDF Export & Edit Goals)
-        ui.horizontal(|ui| {
-            ui.label("Selecciona el dia:");
-            for (idx, day) in state.weekly_menu.days.iter().enumerate() {
-                let is_selected = self.selected_day_idx == idx;
-                if ui.selectable_label(is_selected, &day.day_name).clicked() {
-                    self.selected_day_idx = idx;
-                }
-            }
+        let is_mobile = ui.ctx().screen_rect().width() < 750.0 || ui.available_width() < 750.0;
 
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("💾 Guardar Menú del Dia en PDF / HTML...").clicked() {
+        // Day Selector Buttons + Action Bar (PDF Export & Edit Goals)
+        if is_mobile {
+            ui.horizontal(|ui| {
+                if ui.button("💾 Exportar HTML").clicked() {
                     let day_name = state.weekly_menu.days.get(self.selected_day_idx).map(|d| d.day_name.as_str()).unwrap_or("diari");
                     let file_name = format!("menu_diari_{}.html", day_name.to_lowercase());
                     let html = generate_daily_menu_report_html(state, self.selected_day_idx);
@@ -72,19 +66,77 @@ impl MenuPlannerView {
 
                     #[cfg(target_arch = "wasm32")]
                     {
-                        let _ = (html, file_name);
-                        self.export_message = Some("✅ Informe desat per a impressió Web".into());
+                        if let Err(e) = crate::web_utils::web::download_file(&file_name, "text/html", html.as_bytes()) {
+                            self.export_message = Some(format!("❌ Error en descarregar HTML: {:?}", e));
+                        } else {
+                            self.export_message = Some(format!("💾 S'ha descarregat {}!", file_name));
+                        }
                     }
-
                 }
 
-
-
-                if ui.button("⚙️ Personalitzar Objectius").clicked() {
+                if ui.button("⚙ Objectius").clicked() {
                     self.show_edit_goals_modal = true;
                 }
             });
-        });
+
+            ui.add_space(4.0);
+            let day_abbrs = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
+            ui.columns(7, |cols| {
+                for (idx, abbr) in day_abbrs.iter().enumerate() {
+                    let is_selected = self.selected_day_idx == idx;
+                    if cols[idx].selectable_label(is_selected, *abbr).clicked() {
+                        self.selected_day_idx = idx;
+                    }
+                }
+            });
+        } else {
+            ui.horizontal(|ui| {
+                ui.label("Selecciona el dia:");
+                for (idx, day) in state.weekly_menu.days.iter().enumerate() {
+                    let is_selected = self.selected_day_idx == idx;
+                    if ui.selectable_label(is_selected, &day.day_name).clicked() {
+                        self.selected_day_idx = idx;
+                    }
+                }
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("💾 Guardar Menú del Dia en PDF / HTML...").clicked() {
+                        let day_name = state.weekly_menu.days.get(self.selected_day_idx).map(|d| d.day_name.as_str()).unwrap_or("diari");
+                        let file_name = format!("menu_diari_{}.html", day_name.to_lowercase());
+                        let html = generate_daily_menu_report_html(state, self.selected_day_idx);
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("Document HTML (PDF)", &["html"])
+                                .set_file_name(&file_name)
+                                .set_title(format!("Guardar Informe de {}", day_name))
+                                .save_file()
+                            {
+                                if std::fs::write(&path, &html).is_ok() {
+                                    self.export_message = Some(format!("💾 Fitxer desat amb èxit a: {}", path.display()));
+                                } else {
+                                    self.export_message = Some("❌ Error en escriure el fitxer en disc".into());
+                                }
+                            }
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            if let Err(e) = crate::web_utils::web::download_file(&file_name, "text/html", html.as_bytes()) {
+                                self.export_message = Some(format!("❌ Error en descarregar HTML: {:?}", e));
+                            } else {
+                                self.export_message = Some(format!("💾 S'ha descarregat {}!", file_name));
+                            }
+                        }
+                    }
+
+                    if ui.button("⚙ Personalitzar Objectius").clicked() {
+                        self.show_edit_goals_modal = true;
+                    }
+                });
+            });
+        }
 
         if let Some(msg) = &self.export_message {
             ui.add_space(4.0);
@@ -103,322 +155,414 @@ impl MenuPlannerView {
             ui.heading(format!("Menú per a: {}", current_day_name));
         });
 
-        ui.add_space(8.0);
+        ui.add_space(6.0);
 
-        // Single Column Vertical Layout (No side-by-side columns, avoiding any overlap!)
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            // SECTION 1: Meals of the Selected Day
-            ui.group(|ui| {
-                ui.heading("Àpats del Dia");
-                ui.add_space(4.0);
+        // SECTION 1: Meals of the Selected Day
+        ui.group(|ui| {
+            ui.heading("Àpats del Dia");
+            ui.add_space(4.0);
 
-                let day = &mut state.weekly_menu.days[self.selected_day_idx];
+            let day = &mut state.weekly_menu.days[self.selected_day_idx];
 
-                for meal_type in MealType::all() {
-                    ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.strong(meal_type.name_ca());
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if ui.button("+ Afegir Aliment / Plat").clicked() {
-                                    self.selected_meal = Some(meal_type);
-                                    self.show_add_item_dialog = true;
-                                    self.add_item_id.clear();
-                                    self.picker_search.clear();
-                                    self.add_quantity = 100.0;
+            for meal_type in MealType::all() {
+                ui.group(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.strong(meal_type.name_ca());
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let btn_text = if is_mobile { "+ Afegir" } else { "+ Afegir Aliment / Plat" };
+                            if ui.button(btn_text).clicked() {
+                                self.selected_meal = Some(meal_type);
+                                self.show_add_item_dialog = true;
+                                self.add_item_id.clear();
+                                self.picker_search.clear();
+                                self.add_quantity = 100.0;
+                            }
+                        });
+                    });
+
+                    ui.separator();
+
+                    let entries = day.meals.entry(meal_type).or_insert_with(Vec::new);
+
+                    if entries.is_empty() {
+                        ui.label(" (Sense aliments afegits)");
+                    } else if is_mobile {
+                        // Responsive mobile card layout
+                        let mut to_remove = None;
+                        for (entry_idx, entry) in entries.iter_mut().enumerate() {
+                            ui.group(|ui| {
+                                if entry.is_dish {
+                                    if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
+                                        let nova = dish.derived_nova_group(&state.ingredients);
+                                        let ig = dish.derived_glycemic_index(&state.ingredients);
+                                        let level = dish.derived_glycemic_level(&state.ingredients);
+                                        let cg = dish.calculate_glycemic_load(&state.ingredients) * entry.quantity;
+                                        let nut = dish.calculate_total_nutrition(&state.ingredients).scale(entry.quantity);
+
+                                        ui.horizontal(|ui| {
+                                            draw_nova_badge(ui, nova);
+                                            draw_glycemic_badge(ui, level, ig);
+                                            ui.strong(format!("🍲 {}", dish.name));
+                                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                if ui.small_button("🗑").clicked() {
+                                                    to_remove = Some(entry_idx);
+                                                }
+                                            });
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Racions:");
+                                            ui.add(egui::DragValue::new(&mut entry.quantity).speed(0.1).range(0.1..=20.0).max_decimals(2));
+                                            ui.add_space(6.0);
+                                            ui.colored_label(Color32::from_rgb(255, 180, 80), format!("⚡ {:.0} kcal", nut.kcal));
+                                            ui.add_space(6.0);
+                                            ui.colored_label(Color32::from_rgb(130, 220, 130), format!("🏷 {:.2} €", nut.price_euro));
+                                        });
+
+                                        ui.horizontal_wrapped(|ui| {
+                                            ui.small(format!("🥩 P: {:.1}g", nut.protein_g));
+                                            ui.small(format!("🌾 C: {:.1}g (Sucres: {:.1}g, CG: {:.1})", nut.carbs_g, nut.sugars_g, cg));
+                                            ui.small(format!("🥑 G: {:.1}g (Sat: {:.1}g)", nut.fat_g, nut.saturated_fat_g));
+                                            ui.small(format!("🌿 Fibra: {:.1}g", nut.fiber_g));
+                                            ui.small(format!("🧂 Sal: {:.2}g", nut.salt_g));
+                                        });
+                                    } else {
+                                        ui.label(format!("Plat desconegut ({})", entry.item_id));
+                                    }
+                                } else {
+                                    if let Some(ing) = state.ingredients.iter().find(|i| i.id == entry.item_id) {
+                                        let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                                        let ig = ing.get_glycemic_index();
+                                        let level = ing.get_glycemic_level();
+                                        let cg = ing.calculate_glycemic_load(entry.quantity);
+                                        let nut = ing.calculate_nutrition(entry.quantity);
+                                        let (speed, unit_str, max_range) = match ing.unit_type {
+                                            UnitType::Per100g => (0.1, "g", 3000.0),
+                                            UnitType::PerUnit { .. } => (0.1, "ut", 50.0),
+                                        };
+
+                                        ui.horizontal(|ui| {
+                                            draw_nova_badge(ui, nova);
+                                            draw_glycemic_badge(ui, level, ig);
+                                            ui.strong(format!("🥗 {}", ing.name));
+                                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                if ui.small_button("🗑").clicked() {
+                                                    to_remove = Some(entry_idx);
+                                                }
+                                            });
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label("Quantitat:");
+                                            ui.add(egui::DragValue::new(&mut entry.quantity).speed(speed).range(0.01..=max_range).max_decimals(2));
+                                            ui.small(unit_str);
+                                            ui.add_space(6.0);
+                                            ui.colored_label(Color32::from_rgb(255, 180, 80), format!("⚡ {:.0} kcal", nut.kcal));
+                                            ui.add_space(6.0);
+                                            ui.colored_label(Color32::from_rgb(130, 220, 130), format!("🏷 {:.2} €", nut.price_euro));
+                                        });
+
+                                        ui.horizontal_wrapped(|ui| {
+                                            ui.small(format!("🥩 P: {:.1}g", nut.protein_g));
+                                            ui.small(format!("🌾 C: {:.1}g (Sucres: {:.1}g, CG: {:.1})", nut.carbs_g, nut.sugars_g, cg));
+                                            ui.small(format!("🥑 G: {:.1}g (Sat: {:.1}g)", nut.fat_g, nut.saturated_fat_g));
+                                            ui.small(format!("🌿 Fibra: {:.1}g", nut.fiber_g));
+                                            ui.small(format!("🧂 Sal: {:.2}g", nut.salt_g));
+                                        });
+                                    } else {
+                                        ui.label(format!("Aliment desconegut ({})", entry.item_id));
+                                    }
                                 }
                             });
-                        });
-
-                        ui.separator();
-
-                        let entries = day.meals.entry(meal_type).or_insert_with(Vec::new);
-
-                        if entries.is_empty() {
-                            ui.label(" (Sense aliments afegits)");
-                        } else {
-                            egui::Grid::new(format!("meal_grid_{:?}", meal_type))
-                                .striped(true)
-                                .spacing([12.0, 6.0])
-                                .show(ui, |ui| {
-                                    ui.strong("Element");
-                                    ui.strong("Porció / Quantitat");
-                                    ui.strong("Kcal");
-                                    ui.strong("Greixos (Sat)");
-                                    ui.strong("HdC (Sucres)");
-                                    ui.strong("Fibra");
-                                    ui.strong("Proteïna");
-                                    ui.strong("Sal");
-                                    ui.strong("Preu (€)");
-                                    ui.strong("Acció");
-                                    ui.end_row();
-
-                                    let mut to_remove = None;
-
-                                    for (entry_idx, entry) in entries.iter_mut().enumerate() {
-                                        if entry.is_dish {
-                                            if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
-                                                let nova = dish.derived_nova_group(&state.ingredients);
-                                                let ig = dish.derived_glycemic_index(&state.ingredients);
-                                                let level = dish.derived_glycemic_level(&state.ingredients);
-                                                let cg = dish.calculate_glycemic_load(&state.ingredients) * entry.quantity;
-
-                                                ui.horizontal(|ui| {
-                                                    draw_nova_badge(ui, nova);
-                                                    draw_glycemic_badge(ui, level, ig);
-                                                    ui.label(format!("🍲 {}", dish.name));
-                                                });
-
-                                                // Editable portion quantity
-                                                ui.horizontal(|ui| {
-                                                    ui.add(egui::DragValue::new(&mut entry.quantity).speed(0.1).range(0.1..=20.0));
-                                                    ui.small("racions");
-                                                });
-
-                                                let nut = dish.calculate_total_nutrition(&state.ingredients).scale(entry.quantity);
-                                                ui.label(format!("{:.0}", nut.kcal));
-                                                ui.label(format!("{:.1}g ({:.1}g)", nut.fat_g, nut.saturated_fat_g));
-                                                ui.label(format!("{:.1}g ({:.1}g) [CG {:.1}]", nut.carbs_g, nut.sugars_g, cg));
-                                                ui.label(format!("{:.1}g", nut.fiber_g));
-                                                ui.label(format!("{:.1}g", nut.protein_g));
-                                                ui.label(format!("{:.2}g", nut.salt_g));
-                                                ui.label(format!("{:.2}€", nut.price_euro));
-                                            } else {
-                                                ui.label(format!("Plat desconegut ({})", entry.item_id));
-                                                for _ in 0..8 {
-                                                    ui.label("-");
-                                                }
-                                            }
-                                        } else {
-                                            if let Some(ing) = state.ingredients.iter().find(|i| i.id == entry.item_id) {
-                                                let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
-                                                let ig = ing.get_glycemic_index();
-                                                let level = ing.get_glycemic_level();
-                                                let cg = ing.calculate_glycemic_load(entry.quantity);
-
-                                                ui.horizontal(|ui| {
-                                                    draw_nova_badge(ui, nova);
-                                                    draw_glycemic_badge(ui, level, ig);
-                                                    ui.label(format!("🥗 {}", ing.name));
-                                                });
-
-                                                // Editable portion quantity
-                                                let (speed, unit_str, max_range) = match ing.unit_type {
-                                                    UnitType::Per100g => (0.1, "g", 3000.0),
-                                                    UnitType::PerUnit { .. } => (0.1, "ut", 50.0),
-                                                };
-                                                ui.horizontal(|ui| {
-                                                    ui.add(egui::DragValue::new(&mut entry.quantity).speed(speed).range(0.01..=max_range).max_decimals(2));
-                                                    ui.small(unit_str);
-                                                });
-
-                                                let nut = ing.calculate_nutrition(entry.quantity);
-                                                ui.label(format!("{:.0}", nut.kcal));
-                                                ui.label(format!("{:.1}g ({:.1}g)", nut.fat_g, nut.saturated_fat_g));
-                                                ui.label(format!("{:.1}g ({:.1}g) [CG {:.1}]", nut.carbs_g, nut.sugars_g, cg));
-                                                ui.label(format!("{:.1}g", nut.fiber_g));
-                                                ui.label(format!("{:.1}g", nut.protein_g));
-                                                ui.label(format!("{:.2}g", nut.salt_g));
-                                                ui.label(format!("{:.2}€", nut.price_euro));
-                                            } else {
-                                                ui.label(format!("Aliment desconegut ({})", entry.item_id));
-                                                for _ in 0..8 {
-                                                    ui.label("-");
-                                                }
-                                            }
-                                        }
-
-                                        if ui.small_button("🗑️").clicked() {
-                                            to_remove = Some(entry_idx);
-                                        }
-
-                                        ui.end_row();
-                                    }
-
-                                    if let Some(rem_idx) = to_remove {
-                                        entries.remove(rem_idx);
-                                    }
-                                });
+                            ui.add_space(2.0);
                         }
-                    });
-                    ui.add_space(4.0);
+
+                        if let Some(rem_idx) = to_remove {
+                            entries.remove(rem_idx);
+                        }
+                    } else {
+                        // Desktop table layout
+                        egui::Grid::new(format!("meal_grid_{:?}", meal_type))
+                            .striped(true)
+                            .spacing([12.0, 6.0])
+                            .show(ui, |ui| {
+                                ui.strong("Element");
+                                ui.strong("Porció / Quantitat");
+                                ui.strong("Kcal");
+                                ui.strong("Greixos (Sat)");
+                                ui.strong("HdC (Sucres)");
+                                ui.strong("Fibra");
+                                ui.strong("Proteïna");
+                                ui.strong("Sal");
+                                ui.strong("Preu (€)");
+                                ui.strong("Acció");
+                                ui.end_row();
+
+                                let mut to_remove = None;
+
+                                for (entry_idx, entry) in entries.iter_mut().enumerate() {
+                                    if entry.is_dish {
+                                        if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
+                                            let nova = dish.derived_nova_group(&state.ingredients);
+                                            let ig = dish.derived_glycemic_index(&state.ingredients);
+                                            let level = dish.derived_glycemic_level(&state.ingredients);
+                                            let cg = dish.calculate_glycemic_load(&state.ingredients) * entry.quantity;
+
+                                            ui.horizontal(|ui| {
+                                                draw_nova_badge(ui, nova);
+                                                draw_glycemic_badge(ui, level, ig);
+                                                ui.label(format!("🍲 {}", dish.name));
+                                            });
+
+                                            // Editable portion quantity
+                                            ui.horizontal(|ui| {
+                                                ui.add(egui::DragValue::new(&mut entry.quantity).speed(0.1).range(0.1..=20.0).max_decimals(2));
+                                                ui.small("racions");
+                                            });
+
+                                            let nut = dish.calculate_total_nutrition(&state.ingredients).scale(entry.quantity);
+                                            ui.label(format!("{:.0}", nut.kcal));
+                                            ui.label(format!("{:.1}g ({:.1}g)", nut.fat_g, nut.saturated_fat_g));
+                                            ui.label(format!("{:.1}g ({:.1}g) [CG {:.1}]", nut.carbs_g, nut.sugars_g, cg));
+                                            ui.label(format!("{:.1}g", nut.fiber_g));
+                                            ui.label(format!("{:.1}g", nut.protein_g));
+                                            ui.label(format!("{:.2}g", nut.salt_g));
+                                            ui.label(format!("{:.2}€", nut.price_euro));
+                                        } else {
+                                            ui.label(format!("Plat desconegut ({})", entry.item_id));
+                                            for _ in 0..8 {
+                                                ui.label("-");
+                                            }
+                                        }
+                                    } else {
+                                        if let Some(ing) = state.ingredients.iter().find(|i| i.id == entry.item_id) {
+                                            let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                                            let ig = ing.get_glycemic_index();
+                                            let level = ing.get_glycemic_level();
+                                            let cg = ing.calculate_glycemic_load(entry.quantity);
+
+                                            ui.horizontal(|ui| {
+                                                draw_nova_badge(ui, nova);
+                                                draw_glycemic_badge(ui, level, ig);
+                                                ui.label(format!("🥗 {}", ing.name));
+                                            });
+
+                                            // Editable portion quantity
+                                            let (speed, unit_str, max_range) = match ing.unit_type {
+                                                UnitType::Per100g => (0.1, "g", 3000.0),
+                                                UnitType::PerUnit { .. } => (0.1, "ut", 50.0),
+                                            };
+                                            ui.horizontal(|ui| {
+                                                ui.add(egui::DragValue::new(&mut entry.quantity).speed(speed).range(0.01..=max_range).max_decimals(2));
+                                                ui.small(unit_str);
+                                            });
+
+                                            let nut = ing.calculate_nutrition(entry.quantity);
+                                            ui.label(format!("{:.0}", nut.kcal));
+                                            ui.label(format!("{:.1}g ({:.1}g)", nut.fat_g, nut.saturated_fat_g));
+                                            ui.label(format!("{:.1}g ({:.1}g) [CG {:.1}]", nut.carbs_g, nut.sugars_g, cg));
+                                            ui.label(format!("{:.1}g", nut.fiber_g));
+                                            ui.label(format!("{:.1}g", nut.protein_g));
+                                            ui.label(format!("{:.2}g", nut.salt_g));
+                                            ui.label(format!("{:.2}€", nut.price_euro));
+                                        } else {
+                                            ui.label(format!("Aliment desconegut ({})", entry.item_id));
+                                            for _ in 0..8 {
+                                                ui.label("-");
+                                            }
+                                        }
+                                    }
+
+                                    if ui.small_button("🗑").clicked() {
+                                        to_remove = Some(entry_idx);
+                                    }
+
+                                    ui.end_row();
+                                }
+
+                                if let Some(rem_idx) = to_remove {
+                                    entries.remove(rem_idx);
+                                }
+                            });
+                    }
+                });
+                ui.add_space(4.0);
+            }
+        });
+        ui.add_space(12.0);
+
+        // SECTION 2: Nutritional Dashboard & Goals (Full width underneath meals)
+        ui.group(|ui| {
+            ui.heading("Resum Nutricional i Objectius Diaris");
+            ui.add_space(6.0);
+
+            let day = &state.weekly_menu.days[self.selected_day_idx];
+            let total_nut = day.calculate_total_nutrition(&state.ingredients, &state.dishes);
+            let goals = &state.goals;
+
+            ui.group(|ui| {
+                ui.strong("⚡ Valor Energètic Totals");
+                let kcal_ratio = (total_nut.kcal / goals.max_kcal).min(1.0);
+                let kcal_color = if total_nut.kcal >= goals.min_kcal && total_nut.kcal <= goals.max_kcal {
+                    Color32::from_rgb(46, 125, 50)
+                } else if total_nut.kcal < goals.min_kcal {
+                    Color32::from_rgb(245, 124, 0)
+                } else {
+                    Color32::from_rgb(198, 40, 40)
+                };
+
+                ui.add(ProgressBar::new(kcal_ratio as f32).fill(kcal_color).text(format!("{:.0} / {:.0} Kcal", total_nut.kcal, goals.max_kcal)));
+                if total_nut.kcal < goals.min_kcal {
+                    ui.colored_label(Color32::from_rgb(245, 124, 0), format!("⚠ Falten {:.0} Kcal per arribar al mínim recomanat ({:.0} Kcal)", goals.min_kcal - total_nut.kcal, goals.min_kcal));
+                } else if total_nut.kcal > goals.max_kcal {
+                    ui.colored_label(Color32::from_rgb(198, 40, 40), format!("⚠ Superat el màxim recomanat per {:.0} Kcal", total_nut.kcal - goals.max_kcal));
+                } else {
+                    ui.colored_label(Color32::from_rgb(46, 125, 50), "✅ Valor energètic dins del rang recomanat");
                 }
             });
 
-            ui.add_space(12.0);
+            ui.add_space(4.0);
 
-            // SECTION 2: Nutritional Dashboard & Goals (Full width underneath meals)
             ui.group(|ui| {
-                ui.heading("Resum Nutricional i Objectius Diaris");
-                ui.add_space(6.0);
+                ui.strong("📊 Repartiment de Macronutrients (% de Kcal)");
+                let total_g = total_nut.total_macro_grams();
+                let total_mkcal = total_nut.total_macro_kcal();
+                ui.label(format!("Total Kcal de macronutrients: {:.0} Kcal ({:.1} g totals)", total_mkcal, total_g));
 
-                let day = &state.weekly_menu.days[self.selected_day_idx];
-                let total_nut = day.calculate_total_nutrition(&state.ingredients, &state.dishes);
-                let goals = &state.goals;
-
-                ui.group(|ui| {
-                    ui.strong("⚡ Valor Energètic Totals");
-                    let kcal_ratio = (total_nut.kcal / goals.max_kcal).min(1.0);
-                    let kcal_color = if total_nut.kcal >= goals.min_kcal && total_nut.kcal <= goals.max_kcal {
-                        Color32::from_rgb(46, 125, 50)
-                    } else if total_nut.kcal < goals.min_kcal {
-                        Color32::from_rgb(245, 124, 0)
+                // Fat % & g
+                let fat_p = total_nut.fat_pct();
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Greixos: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%)", fat_p, total_nut.fat_g, goals.min_fat_pct, goals.max_fat_pct));
+                    if fat_p >= goals.min_fat_pct && fat_p <= goals.max_fat_pct {
+                        ui.colored_label(Color32::GREEN, "OK");
                     } else {
-                        Color32::from_rgb(198, 40, 40)
-                    };
-
-                    ui.add(ProgressBar::new(kcal_ratio as f32).fill(kcal_color).text(format!("{:.0} / {:.0} Kcal", total_nut.kcal, goals.max_kcal)));
-                    if total_nut.kcal < goals.min_kcal {
-                        ui.colored_label(Color32::from_rgb(245, 124, 0), format!("⚠️ Falten {:.0} Kcal per arribar al mínim recomanat ({:.0} Kcal)", goals.min_kcal - total_nut.kcal, goals.min_kcal));
-                    } else if total_nut.kcal > goals.max_kcal {
-                        ui.colored_label(Color32::from_rgb(198, 40, 40), format!("⚠️ Superat el màxim recomanat per {:.0} Kcal", total_nut.kcal - goals.max_kcal));
-                    } else {
-                        ui.colored_label(Color32::from_rgb(46, 125, 50), "✅ Valor energètic dins del rang recomanat");
+                        ui.colored_label(Color32::YELLOW, "Ajustar");
                     }
                 });
 
-                ui.add_space(4.0);
-
-                ui.group(|ui| {
-                    ui.strong("📊 Repartiment de Macronutrients (% de Kcal)");
-                    let total_g = total_nut.total_macro_grams();
-                    let total_mkcal = total_nut.total_macro_kcal();
-                    ui.label(format!("Total Kcal de macronutrients: {:.0} Kcal ({:.1} g totals)", total_mkcal, total_g));
-
-                    // Fat % & g
-                    let fat_p = total_nut.fat_pct();
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Greixos: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%)", fat_p, total_nut.fat_g, goals.min_fat_pct, goals.max_fat_pct));
-                        if fat_p >= goals.min_fat_pct && fat_p <= goals.max_fat_pct {
-                            ui.colored_label(Color32::GREEN, "OK");
-                        } else {
-                            ui.colored_label(Color32::YELLOW, "Ajustar");
-                        }
-                    });
-
-                    // Carbs % & g
-                    let carb_p = total_nut.carbs_pct();
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Hidrats Carboni: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%)", carb_p, total_nut.carbs_g, goals.min_carbs_pct, goals.max_carbs_pct));
-                        if carb_p >= goals.min_carbs_pct && carb_p <= goals.max_carbs_pct {
-                            ui.colored_label(Color32::GREEN, "OK");
-                        } else {
-                            ui.colored_label(Color32::YELLOW, "Ajustar");
-                        }
-                    });
-
-                    // Protein % & g
-                    let prot_p = total_nut.protein_pct();
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Proteïnes: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}% | >{:.0}g)", prot_p, total_nut.protein_g, goals.min_protein_pct, goals.max_protein_pct, goals.min_protein_g));
-                        if total_nut.protein_g >= goals.min_protein_g {
-                            ui.colored_label(Color32::GREEN, "OK");
-                        } else {
-                            ui.colored_label(Color32::RED, "Manca proteïna");
-                        }
-                    });
-                });
-
-                ui.add_space(4.0);
-
-                ui.group(|ui| {
-                    ui.strong("📈 Índex i Càrrega Glucèmica (CG)");
-                    let total_cg = day.calculate_total_glycemic_load(&state.ingredients, &state.dishes);
-                    let cg_ratio = (total_cg / goals.max_glycemic_load).min(1.0);
-                    let cg_color = if total_cg <= goals.max_glycemic_load {
-                        Color32::from_rgb(46, 125, 50)
+                // Carbs % & g
+                let carb_p = total_nut.carbs_pct();
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Hidrats Carboni: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}%)", carb_p, total_nut.carbs_g, goals.min_carbs_pct, goals.max_carbs_pct));
+                    if carb_p >= goals.min_carbs_pct && carb_p <= goals.max_carbs_pct {
+                        ui.colored_label(Color32::GREEN, "OK");
                     } else {
-                        Color32::from_rgb(198, 40, 40)
-                    };
-
-                    ui.add(ProgressBar::new(cg_ratio as f32).fill(cg_color).text(format!("CG Diària: {:.1} / {:.0}", total_cg, goals.max_glycemic_load)));
-                    if total_cg <= goals.max_glycemic_load {
-                        ui.colored_label(Color32::from_rgb(46, 125, 50), "✅ Càrrega Glucèmica sota el límit recomanat");
-                    } else {
-                        ui.colored_label(Color32::from_rgb(198, 40, 40), format!("⚠️ Càrrega Glucèmica elevada ({:.1}). Redueix refinats i sucres.", total_cg));
+                        ui.colored_label(Color32::YELLOW, "Ajustar");
                     }
                 });
 
-                ui.add_space(4.0);
-
-                ui.group(|ui| {
-                    ui.strong("🏷️ Classificació i Qualitat NOVA");
-                    let nova_map = day.nova_breakdown(&state.ingredients, &state.dishes);
-                    let total_k = total_nut.kcal;
-
-                    for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
-                        let kcal_g = nova_map.get(&group).copied().unwrap_or(0.0);
-                        let pct = if total_k > 0.0 { (kcal_g / total_k) * 100.0 } else { 0.0 };
-
-                        ui.horizontal(|ui| {
-                            draw_nova_badge(ui, group);
-                            ui.label(format!("{:.1}% ({:.0} Kcal)", pct, kcal_g));
-                        });
-                    }
-
-                    let ultra_kcal = nova_map.get(&NovaGroup::Group4UltraProcessed).copied().unwrap_or(0.0);
-                    let ultra_pct = if total_k > 0.0 { (ultra_kcal / total_k) * 100.0 } else { 0.0 };
-                    if ultra_pct > goals.max_ultraprocessed_pct {
-                        ui.colored_label(Color32::from_rgb(198, 40, 40), format!("⚠️ Alt contingut d'Ultraprocessats ({:.1}% de Kcal diàries)", ultra_pct));
+                // Protein % & g
+                let prot_p = total_nut.protein_pct();
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Proteïnes: {:.1}% ({:.1}g) (Rec: {:.0}-{:.0}% | >{:.0}g)", prot_p, total_nut.protein_g, goals.min_protein_pct, goals.max_protein_pct, goals.min_protein_g));
+                    if total_nut.protein_g >= goals.min_protein_g {
+                        ui.colored_label(Color32::GREEN, "OK");
                     } else {
-                        ui.colored_label(Color32::from_rgb(46, 125, 50), "✅ Dieta neta d'ultraprocessats");
+                        ui.colored_label(Color32::RED, "Manca proteïna");
+                    }
+                });
+            });
+
+            ui.add_space(4.0);
+
+            ui.group(|ui| {
+                ui.strong("📈 Índex i Càrrega Glucèmica (CG)");
+                let total_cg = day.calculate_total_glycemic_load(&state.ingredients, &state.dishes);
+                let cg_ratio = (total_cg / goals.max_glycemic_load).min(1.0);
+                let cg_color = if total_cg <= goals.max_glycemic_load {
+                    Color32::from_rgb(46, 125, 50)
+                } else {
+                    Color32::from_rgb(198, 40, 40)
+                };
+
+                ui.add(ProgressBar::new(cg_ratio as f32).fill(cg_color).text(format!("CG Diària: {:.1} / {:.0}", total_cg, goals.max_glycemic_load)));
+                if total_cg <= goals.max_glycemic_load {
+                    ui.colored_label(Color32::from_rgb(46, 125, 50), "✅ Càrrega Glucèmica sota el límit recomanat");
+                } else {
+                    ui.colored_label(Color32::from_rgb(198, 40, 40), format!("⚠ Càrrega Glucèmica elevada ({:.1}). Redueix refinats i sucres.", total_cg));
+                }
+            });
+
+            ui.add_space(4.0);
+
+            ui.group(|ui| {
+                ui.strong("🏷 Classificació i Qualitat NOVA");
+                let nova_map = day.nova_breakdown(&state.ingredients, &state.dishes);
+                let total_k = total_nut.kcal;
+
+                for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
+                    let kcal_g = nova_map.get(&group).copied().unwrap_or(0.0);
+                    let pct = if total_k > 0.0 { (kcal_g / total_k) * 100.0 } else { 0.0 };
+
+                    ui.horizontal_wrapped(|ui| {
+                        draw_nova_badge(ui, group);
+                        ui.label(format!("{:.1}% ({:.0} Kcal)", pct, kcal_g));
+                    });
+                }
+
+                let ultra_kcal = nova_map.get(&NovaGroup::Group4UltraProcessed).copied().unwrap_or(0.0);
+                let ultra_pct = if total_k > 0.0 { (ultra_kcal / total_k) * 100.0 } else { 0.0 };
+                if ultra_pct > goals.max_ultraprocessed_pct {
+                    ui.colored_label(Color32::from_rgb(198, 40, 40), format!("⚠ Alt contingut d'Ultraprocessats ({:.1}% de Kcal diàries)", ultra_pct));
+                } else {
+                    ui.colored_label(Color32::from_rgb(46, 125, 50), "✅ Dieta neta d'ultraprocessats");
+                }
+            });
+
+            ui.add_space(4.0);
+
+            ui.group(|ui| {
+                ui.strong("⚠ Límits i Control d'Ingredients");
+                // Sat Fat
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Greixos Saturats: {:.1} g (Màx: {:.0}g)", total_nut.saturated_fat_g, goals.max_saturated_fat_g));
+                    if total_nut.saturated_fat_g <= goals.max_saturated_fat_g {
+                        ui.colored_label(Color32::GREEN, "OK");
+                    } else {
+                        ui.colored_label(Color32::RED, "EXCEDIT");
                     }
                 });
 
-                ui.add_space(4.0);
-
-                ui.group(|ui| {
-                    ui.strong("⚠️ Límits i Control d'Ingredients");
-                    // Sat Fat
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Greixos Saturats: {:.1} g (Màx: {:.0}g)", total_nut.saturated_fat_g, goals.max_saturated_fat_g));
-                        if total_nut.saturated_fat_g <= goals.max_saturated_fat_g {
-                            ui.colored_label(Color32::GREEN, "OK");
-                        } else {
-                            ui.colored_label(Color32::RED, "EXCEDIT");
-                        }
-                    });
-
-                    // Sugars
-                    let sugar_p = total_nut.sugar_pct_of_macros();
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Sucres: {:.1}% de macros (Màx: {:.0}%)", sugar_p, goals.max_sugar_macro_pct));
-                        if sugar_p <= goals.max_sugar_macro_pct {
-                            ui.colored_label(Color32::GREEN, "OK");
-                        } else {
-                            ui.colored_label(Color32::RED, "EXCEDIT");
-                        }
-                    });
-
-                    // Fiber
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Fibra Alimentària: {:.1} g (Mín: {:.0}g | Ideal: {:.0}g)", total_nut.fiber_g, goals.min_fiber_g, goals.ideal_fiber_g));
-                        if total_nut.fiber_g >= goals.ideal_fiber_g {
-                            ui.colored_label(Color32::GREEN, "Excel·lent");
-                        } else if total_nut.fiber_g >= goals.min_fiber_g {
-                            ui.colored_label(Color32::GREEN, "Acceptable");
-                        } else {
-                            ui.colored_label(Color32::YELLOW, "Insuficient");
-                        }
-                    });
-
-                    // Salt
-                    ui.horizontal(|ui| {
-                        ui.label(format!("• Sal: {:.2} g (Màx: {:.0}g)", total_nut.salt_g, goals.max_salt_g));
-                        if total_nut.salt_g <= goals.max_salt_g {
-                            ui.colored_label(Color32::GREEN, "OK");
-                        } else {
-                            ui.colored_label(Color32::RED, "EXCEDIT");
-                        }
-                    });
+                // Sugars
+                let sugar_p = total_nut.sugar_pct_of_macros();
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Sucres: {:.1}% de macros (Màx: {:.0}%)", sugar_p, goals.max_sugar_macro_pct));
+                    if sugar_p <= goals.max_sugar_macro_pct {
+                        ui.colored_label(Color32::GREEN, "OK");
+                    } else {
+                        ui.colored_label(Color32::RED, "EXCEDIT");
+                    }
                 });
 
-                ui.add_space(4.0);
+                // Fiber
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Fibra Alimentària: {:.1} g (Mín: {:.0}g | Ideal: {:.0}g)", total_nut.fiber_g, goals.min_fiber_g, goals.ideal_fiber_g));
+                    if total_nut.fiber_g >= goals.ideal_fiber_g {
+                        ui.colored_label(Color32::GREEN, "Excel·lent");
+                    } else if total_nut.fiber_g >= goals.min_fiber_g {
+                        ui.colored_label(Color32::GREEN, "Acceptable");
+                    } else {
+                        ui.colored_label(Color32::YELLOW, "Insuficient");
+                    }
+                });
 
-                ui.group(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.strong("💶 Despesa Estimada Diària:");
-                        ui.heading(format!("{:.2} €", total_nut.price_euro));
-                    });
+                // Salt
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(format!("• Sal: {:.2} g (Màx: {:.0}g)", total_nut.salt_g, goals.max_salt_g));
+                    if total_nut.salt_g <= goals.max_salt_g {
+                        ui.colored_label(Color32::GREEN, "OK");
+                    } else {
+                        ui.colored_label(Color32::RED, "EXCEDIT");
+                    }
+                });
+            });
+
+            ui.add_space(4.0);
+
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.strong("💶 Despesa Estimada Diària:");
+                    ui.heading(format!("{:.2} €", total_nut.price_euro));
                 });
             });
         });

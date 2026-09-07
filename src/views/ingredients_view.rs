@@ -120,40 +120,140 @@ impl IngredientsView {
         ui.heading("Catàleg d'Aliments i Importació de Bonpreu");
         ui.add_space(8.0);
 
-        ui.horizontal(|ui| {
-            ui.label("🔍 Cercar:");
-            ui.text_edit_singleline(&mut self.search_query);
+        let is_mobile = ui.ctx().screen_rect().width() < 750.0 || ui.available_width() < 750.0;
 
-            ui.add_space(16.0);
-
-            ui.label("Filtre NOVA:");
-            if ui.selectable_label(self.selected_nova_filter.is_none(), "Tots").clicked() {
-                self.selected_nova_filter = None;
-            }
-            for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
-                let is_sel = self.selected_nova_filter == Some(group);
-                if ui.selectable_label(is_sel, group.short_name_ca()).clicked() {
-                    self.selected_nova_filter = Some(group);
+        if is_mobile {
+            ui.horizontal(|ui| {
+                if ui.button("➕ Afegir Aliment").clicked() {
+                    self.reset_form();
+                    self.show_add_manual_modal = true;
                 }
-            }
-
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("🛒 Importar de Bonpreu").clicked() {
+                if ui.button("🛒 Bonpreu").clicked() {
                     self.show_bonpreu_modal = true;
                     self.scraping_error = None;
                     self.scraping_success = None;
                 }
-                if ui.button("➕ Afegir Aliment Manual").clicked() {
-                    self.reset_form();
-                    self.show_add_manual_modal = true;
-                }
             });
-        });
+
+            ui.add_space(2.0);
+            ui.horizontal(|ui| {
+                ui.label("🔍");
+                ui.text_edit_singleline(&mut self.search_query);
+            });
+
+            ui.add_space(2.0);
+            egui::ScrollArea::horizontal()
+                .id_salt("mobile_nova_filter")
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("NOVA:");
+                        if ui.selectable_label(self.selected_nova_filter.is_none(), "Tots").clicked() {
+                            self.selected_nova_filter = None;
+                        }
+                        for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
+                            let is_sel = self.selected_nova_filter == Some(group);
+                            if ui.selectable_label(is_sel, group.short_name_ca()).clicked() {
+                                self.selected_nova_filter = Some(group);
+                            }
+                        }
+                    });
+                });
+        } else {
+            ui.horizontal(|ui| {
+                ui.label("🔍 Cercar:");
+                ui.text_edit_singleline(&mut self.search_query);
+
+                ui.add_space(16.0);
+
+                ui.label("Filtre NOVA:");
+                if ui.selectable_label(self.selected_nova_filter.is_none(), "Tots").clicked() {
+                    self.selected_nova_filter = None;
+                }
+                for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
+                    let is_sel = self.selected_nova_filter == Some(group);
+                    if ui.selectable_label(is_sel, group.short_name_ca()).clicked() {
+                        self.selected_nova_filter = Some(group);
+                    }
+                }
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("🛒 Importar de Bonpreu").clicked() {
+                        self.show_bonpreu_modal = true;
+                        self.scraping_error = None;
+                        self.scraping_success = None;
+                    }
+                    if ui.button("➕ Afegir Aliment Manual").clicked() {
+                        self.reset_form();
+                        self.show_add_manual_modal = true;
+                    }
+                });
+            });
+        }
 
         ui.separator();
 
-        // Ingredients Table
-        egui::ScrollArea::vertical().show(ui, |ui| {
+        // Ingredients Table / Card View
+        let query = self.search_query.to_lowercase();
+        let mut to_delete = None;
+        let mut to_edit = None;
+
+        if is_mobile {
+            // Mobile Card View
+            for (idx, ing) in state.ingredients.iter().enumerate() {
+                if !query.is_empty() && !ing.name.to_lowercase().contains(&query) && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&query) {
+                    continue;
+                }
+                if let Some(nova_filter) = self.selected_nova_filter {
+                    if ing.nova_group != Some(nova_filter) {
+                        continue;
+                    }
+                }
+
+                let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                let ig = ing.get_glycemic_index();
+                let level = ing.get_glycemic_level();
+
+                ui.group(|ui| {
+                    ui.horizontal(|ui| {
+                        crate::views::menu_planner::draw_nova_badge(ui, nova);
+                        crate::views::menu_planner::draw_glycemic_badge(ui, level, ig);
+                        ui.strong(&ing.name);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.small_button("🗑").clicked() {
+                                to_delete = Some(idx);
+                            }
+                            if ui.small_button("✏").clicked() {
+                                to_edit = Some(ing.clone());
+                            }
+                        });
+                    });
+
+                    if let Some(b) = &ing.brand {
+                        ui.small(format!("Marca: {}", b));
+                    }
+
+                    ui.horizontal(|ui| {
+                        ui.colored_label(Color32::from_rgb(255, 180, 80), format!("⚡ {:.0} kcal / 100g", ing.per_unit_nutrition.kcal));
+                        ui.add_space(8.0);
+                        if let Some(price_pack) = ing.price_per_pack {
+                            ui.colored_label(Color32::from_rgb(130, 220, 130), format!("🏷 {:.2}€ / pack", price_pack));
+                        } else {
+                            ui.colored_label(Color32::from_rgb(130, 220, 130), format!("🏷 {:.2}€ / 100g", ing.per_unit_nutrition.price_euro));
+                        }
+                    });
+
+                    ui.horizontal_wrapped(|ui| {
+                        ui.small(format!("🥩 P: {:.1}g", ing.per_unit_nutrition.protein_g));
+                        ui.small(format!("🌾 C: {:.1}g (Sucres: {:.1}g)", ing.per_unit_nutrition.carbs_g, ing.per_unit_nutrition.sugars_g));
+                        ui.small(format!("🥑 G: {:.1}g (Sat: {:.1}g)", ing.per_unit_nutrition.fat_g, ing.per_unit_nutrition.saturated_fat_g));
+                        ui.small(format!("🌿 Fibra: {:.1}g", ing.per_unit_nutrition.fiber_g));
+                        ui.small(format!("🧂 Sal: {:.2}g", ing.per_unit_nutrition.salt_g));
+                    });
+                });
+                ui.add_space(2.0);
+            }
+        } else {
+            // Desktop Grid View
             egui::Grid::new("ingredients_grid")
                 .striped(true)
                 .spacing([12.0, 8.0])
@@ -169,10 +269,6 @@ impl IngredientsView {
                     ui.strong("Preu (€)");
                     ui.strong("Accions");
                     ui.end_row();
-
-                    let query = self.search_query.to_lowercase();
-                    let mut to_delete = None;
-                    let mut to_edit = None;
 
                     for (idx, ing) in state.ingredients.iter().enumerate() {
                         if !query.is_empty() && !ing.name.to_lowercase().contains(&query) && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&query) {
@@ -201,7 +297,6 @@ impl IngredientsView {
                             crate::views::menu_planner::draw_glycemic_badge(ui, level, ig);
                         });
 
-
                         // Kcal
                         ui.label(format!("{:.0}", ing.per_unit_nutrition.kcal));
 
@@ -228,28 +323,28 @@ impl IngredientsView {
                         }
 
                         ui.horizontal(|ui| {
-                            if ui.small_button("✏️").clicked() {
+                            if ui.small_button("✏").clicked() {
                                 to_edit = Some(ing.clone());
                             }
-                            if ui.small_button("🗑️").clicked() {
+                            if ui.small_button("🗑").clicked() {
                                 to_delete = Some(idx);
                             }
                         });
 
                         ui.end_row();
                     }
-
-                    if let Some(ing_to_edit) = to_edit {
-                        self.editing_ingredient_id = Some(ing_to_edit.id.clone());
-                        self.populate_form_from_ingredient(&ing_to_edit);
-                        self.show_edit_modal = true;
-                    }
-
-                    if let Some(del_idx) = to_delete {
-                        state.ingredients.remove(del_idx);
-                    }
                 });
-        });
+        }
+
+        if let Some(ing_to_edit) = to_edit {
+            self.editing_ingredient_id = Some(ing_to_edit.id.clone());
+            self.populate_form_from_ingredient(&ing_to_edit);
+            self.show_edit_modal = true;
+        }
+
+        if let Some(del_idx) = to_delete {
+            state.ingredients.remove(del_idx);
+        }
 
         // MODAL 1: Bonpreu Scraper
         if self.show_bonpreu_modal {

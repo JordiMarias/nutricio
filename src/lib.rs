@@ -4,6 +4,6 @@ pub mod models;
 pub mod scraper;
 pub mod storage;
 pub mod views;
-
+pub mod web_utils;
 
 pub use app::NutricioApp;

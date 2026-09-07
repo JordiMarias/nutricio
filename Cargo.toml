@@ -1,6 +1,6 @@
 [package]
 name = "NutritionalPlanner"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Jordi Marias-i-Parella"]
 license = "MIT"
@@ -16,12 +16,28 @@ regex = "1.10"
 log = "0.4"
 env_logger = "0.11"
 rfd = "0.15"
+web-time = "1.1"
 
 # Web dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlElement", "Storage", "Location"] }
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlInputElement",
+    "HtmlAnchorElement",
+    "Storage",
+    "Location",
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
+    "File",
+    "FileReader"
+] }
 console_error_panic_hook = "0.1"
 reqwest = { version = "0.12", features = ["json"] }
 
