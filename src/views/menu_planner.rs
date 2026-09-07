@@ -203,11 +203,11 @@ impl MenuPlannerView {
 
                                                 // Editable portion quantity
                                                 let (speed, unit_str, max_range) = match ing.unit_type {
-                                                    UnitType::Per100g => (1.0, "g", 3000.0),
+                                                    UnitType::Per100g => (0.1, "g", 3000.0),
                                                     UnitType::PerUnit { .. } => (0.1, "ut", 50.0),
                                                 };
                                                 ui.horizontal(|ui| {
-                                                    ui.add(egui::DragValue::new(&mut entry.quantity).speed(speed).range(0.1..=max_range));
+                                                    ui.add(egui::DragValue::new(&mut entry.quantity).speed(speed).range(0.01..=max_range).max_decimals(2));
                                                     ui.small(unit_str);
                                                 });
 
@@ -530,12 +530,12 @@ impl MenuPlannerView {
                             if let Some(ing) = state.ingredients.iter().find(|i| i.id == self.add_item_id) {
                                 ui.strong(format!("Seleccionat: 🥗 {}", ing.name));
                                 let (label_text, speed, max_val) = match ing.unit_type {
-                                    UnitType::Per100g => ("Quantitat (g):", 1.0, 3000.0),
+                                    UnitType::Per100g => ("Quantitat (g):", 0.1, 3000.0),
                                     UnitType::PerUnit { .. } => ("Nombre d'unitats:", 0.1, 50.0),
                                 };
                                 ui.horizontal(|ui| {
                                     ui.label(label_text);
-                                    ui.add(egui::DragValue::new(&mut self.add_quantity).speed(speed).range(0.1..=max_val));
+                                    ui.add(egui::DragValue::new(&mut self.add_quantity).speed(speed).range(0.01..=max_val).max_decimals(2));
                                 });
                             }
                         }

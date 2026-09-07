@@ -121,25 +121,20 @@ impl DailyMenu {
 
         for entries in self.meals.values() {
             for entry in entries {
-                let (group, kcal) = if entry.is_dish {
+                if entry.is_dish {
                     if let Some(dish) = dishes_db.iter().find(|d| d.id == entry.item_id) {
-                        let grp = dish.derived_nova_group(ingredients_db);
-                        let nut = dish.calculate_total_nutrition(ingredients_db).scale(entry.quantity);
-                        (grp, nut.kcal)
-                    } else {
-                        continue;
+                        let dish_nova = dish.nova_breakdown(ingredients_db);
+                        for (grp, kcal) in dish_nova {
+                            *map.entry(grp).or_insert(0.0) += kcal * entry.quantity;
+                        }
                     }
                 } else {
                     if let Some(ing) = ingredients_db.iter().find(|i| i.id == entry.item_id) {
                         let grp = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
                         let nut = ing.calculate_nutrition(entry.quantity);
-                        (grp, nut.kcal)
-                    } else {
-                        continue;
+                        *map.entry(grp).or_insert(0.0) += nut.kcal;
                     }
-                };
-
-                *map.entry(group).or_insert(0.0) += kcal;
+                }
             }
         }
         map

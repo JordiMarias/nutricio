@@ -160,6 +160,99 @@ mod tests {
         assert!(html.contains("window.print()"));
         assert!(html.contains("Cost Estimat Total Setmanal"));
     }
+
+    #[test]
+    fn test_dish_nova_breakdown_per_ingredient() {
+        let mut ing1 = Ingredient::new("ing1", "Arròs Integral", NutritionalInfo { kcal: 350.0, ..NutritionalInfo::zero() });
+        ing1.nova_group = Some(NovaGroup::Group1Unprocessed);
+
+        let mut ing4 = Ingredient::new("ing4", "Salsa Industrial", NutritionalInfo { kcal: 50.0, ..NutritionalInfo::zero() });
+        ing4.nova_group = Some(NovaGroup::Group4UltraProcessed);
+
+        let ingredients = vec![ing1, ing4];
+
+        let dish = Dish {
+            id: "dish_mixed".to_string(),
+            name: "Arròs amb Salsa".to_string(),
+            description: None,
+            items: vec![
+                DishItem { ingredient_id: "ing1".to_string(), quantity: 100.0 }, // 350 Kcal (NOVA 1)
+                DishItem { ingredient_id: "ing4".to_string(), quantity: 100.0 }, // 50 Kcal (NOVA 4)
+            ],
+            servings: 1.0,
+        };
+
+        // Predominant group for the dish itself should be Group 1 (350 kcal vs 50 kcal)
+        assert_eq!(dish.derived_nova_group(&ingredients), NovaGroup::Group1Unprocessed);
+
+        let dishes = vec![dish];
+
+        let mut day = DailyMenu::new("Dilluns");
+        let entries = day.meals.get_mut(&MealType::Lunch).unwrap();
+        entries.push(MealEntry {
+            id: "entry1".to_string(),
+            item_id: "dish_mixed".to_string(),
+            is_dish: true,
+            quantity: 1.0,
+        });
+
+        let breakdown = day.nova_breakdown(&ingredients, &dishes);
+
+        let g1_kcal = breakdown.get(&NovaGroup::Group1Unprocessed).copied().unwrap_or(0.0);
+        let g4_kcal = breakdown.get(&NovaGroup::Group4UltraProcessed).copied().unwrap_or(0.0);
+
+        assert!((g1_kcal - 350.0).abs() < 1.0, "Expected 350 Kcal in Group 1, got {}", g1_kcal);
+        assert!((g4_kcal - 50.0).abs() < 1.0, "Expected 50 Kcal in Group 4, got {}", g4_kcal);
+    }
+
+    #[test]
+    fn test_dish_nova_breakdown_percentages() {
+        let mut ing1 = Ingredient::new("ing1", "Patata", NutritionalInfo { kcal: 80.0, ..NutritionalInfo::zero() });
+        ing1.nova_group = Some(NovaGroup::Group1Unprocessed);
+
+        let mut ing2 = Ingredient::new("ing2", "Oli d'oliva", NutritionalInfo { kcal: 900.0, ..NutritionalInfo::zero() });
+        ing2.nova_group = Some(NovaGroup::Group2ProcessedIngredient);
+
+        let mut ing4 = Ingredient::new("ing4", "Ketchup Industrial", NutritionalInfo { kcal: 160.0, ..NutritionalInfo::zero() });
+        ing4.nova_group = Some(NovaGroup::Group4UltraProcessed);
+
+        let ingredients = vec![ing1, ing2, ing4];
+
+        let dish = Dish {
+            id: "dish_patates".to_string(),
+            name: "Patates Fregides amb Salsa".to_string(),
+            description: None,
+            items: vec![
+                DishItem { ingredient_id: "ing1".to_string(), quantity: 100.0 }, // 80 Kcal
+                DishItem { ingredient_id: "ing2".to_string(), quantity: 20.0 },  // 180 Kcal
+                DishItem { ingredient_id: "ing4".to_string(), quantity: 25.0 },  // 40 Kcal
+            ],
+            servings: 1.0,
+        };
+
+        let breakdown = dish.nova_breakdown(&ingredients);
+        let total_nut = dish.calculate_total_nutrition(&ingredients);
+        assert!((total_nut.kcal - 300.0).abs() < 1.0);
+
+        let g1 = breakdown.get(&NovaGroup::Group1Unprocessed).copied().unwrap_or(0.0);
+        let g2 = breakdown.get(&NovaGroup::Group2ProcessedIngredient).copied().unwrap_or(0.0);
+        let g3 = breakdown.get(&NovaGroup::Group3Processed).copied().unwrap_or(0.0);
+        let g4 = breakdown.get(&NovaGroup::Group4UltraProcessed).copied().unwrap_or(0.0);
+
+        assert!((g1 - 80.0).abs() < 1.0);
+        assert!((g2 - 180.0).abs() < 1.0);
+        assert_eq!(g3, 0.0);
+        assert!((g4 - 40.0).abs() < 1.0);
+
+        // Check percentage calculation
+        let g1_pct = (g1 / total_nut.kcal) * 100.0;
+        let g2_pct = (g2 / total_nut.kcal) * 100.0;
+        let g4_pct = (g4 / total_nut.kcal) * 100.0;
+
+        assert!((g1_pct - 26.67).abs() < 0.5);
+        assert!((g2_pct - 60.0).abs() < 0.5);
+        assert!((g4_pct - 13.33).abs() < 0.5);
+    }
 }
 
 

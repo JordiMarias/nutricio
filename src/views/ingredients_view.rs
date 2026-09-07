@@ -478,6 +478,14 @@ impl IngredientsView {
             ui.label("Nom:");
             ui.text_edit_singleline(&mut self.form_name);
         });
+        ui.horizontal_wrapped(|ui| {
+            ui.small("Accents:");
+            for c in ["à", "è", "é", "í", "ï", "ò", "ó", "ú", "ü", "ç", "·", "À", "È", "É", "Í", "Ò", "Ó", "Ú", "Ç"] {
+                if ui.small_button(c).clicked() {
+                    self.form_name.push_str(c);
+                }
+            }
+        });
         ui.horizontal(|ui| {
             ui.label("Marca:");
             ui.text_edit_singleline(&mut self.form_brand);

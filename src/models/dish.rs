@@ -47,18 +47,36 @@ impl Dish {
         }
     }
 
-    pub fn derived_nova_group(&self, ingredients_db: &[Ingredient]) -> NovaGroup {
-        let mut worst = NovaGroup::Group1Unprocessed;
+    pub fn nova_breakdown(&self, ingredients_db: &[Ingredient]) -> std::collections::HashMap<NovaGroup, f64> {
+        let mut map = std::collections::HashMap::new();
+        map.insert(NovaGroup::Group1Unprocessed, 0.0);
+        map.insert(NovaGroup::Group2ProcessedIngredient, 0.0);
+        map.insert(NovaGroup::Group3Processed, 0.0);
+        map.insert(NovaGroup::Group4UltraProcessed, 0.0);
+
+        let serving_factor = if self.servings > 0.0 && self.servings != 1.0 {
+            1.0 / self.servings
+        } else {
+            1.0
+        };
+
         for item in &self.items {
             if let Some(ing) = ingredients_db.iter().find(|i| i.id == item.ingredient_id) {
-                if let Some(nova) = ing.nova_group {
-                    if nova > worst {
-                        worst = nova;
-                    }
-                }
+                let grp = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                let nut = ing.calculate_nutrition(item.quantity * serving_factor);
+                *map.entry(grp).or_insert(0.0) += nut.kcal;
             }
         }
-        worst
+        map
+    }
+
+    pub fn derived_nova_group(&self, ingredients_db: &[Ingredient]) -> NovaGroup {
+        let breakdown = self.nova_breakdown(ingredients_db);
+        breakdown
+            .into_iter()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(grp, _)| grp)
+            .unwrap_or(NovaGroup::Group1Unprocessed)
     }
 
     pub fn calculate_glycemic_load(&self, ingredients_db: &[Ingredient]) -> f64 {
