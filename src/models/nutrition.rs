@@ -101,7 +101,7 @@ impl NutritionalInfo {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NutritionalGoals {
     pub min_kcal: f64,
     pub max_kcal: f64,

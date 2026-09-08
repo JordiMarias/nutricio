@@ -47,4 +47,31 @@ pub mod web {
         let _ = window.open_with_url_and_target(&url, "_blank")?;
         Ok(())
     }
+
+    const STORAGE_KEY: &str = "nutricio_app_state";
+
+    /// Guarda l'estat en format JSON al localStorage del navegador
+    pub fn save_to_local_storage(json_str: &str) -> Result<(), wasm_bindgen::JsValue> {
+        let window = web_sys::window().ok_or_else(|| wasm_bindgen::JsValue::from_str("No window available"))?;
+        if let Ok(Some(storage)) = window.local_storage() {
+            storage.set_item(STORAGE_KEY, json_str)?;
+        }
+        Ok(())
+    }
+
+    /// Carrega l'estat JSON des del localStorage del navegador si existeix
+    pub fn load_from_local_storage() -> Option<String> {
+        let window = web_sys::window()?;
+        let storage = window.local_storage().ok()??;
+        storage.get_item(STORAGE_KEY).ok()?
+    }
+
+    /// Esborra l'estat guardat al localStorage
+    pub fn clear_local_storage() -> Result<(), wasm_bindgen::JsValue> {
+        let window = web_sys::window().ok_or_else(|| wasm_bindgen::JsValue::from_str("No window available"))?;
+        if let Ok(Some(storage)) = window.local_storage() {
+            storage.remove_item(STORAGE_KEY)?;
+        }
+        Ok(())
+    }
 }

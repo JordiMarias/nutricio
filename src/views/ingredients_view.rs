@@ -117,7 +117,7 @@ impl IngredientsView {
 
 
     pub fn ui(&mut self, ui: &mut Ui, state: &mut AppState) {
-        ui.heading("Catàleg d'Aliments i Importació de Bonpreu");
+        ui.heading("🥦 Catàleg d'Aliments");
         ui.add_space(8.0);
 
         let is_mobile = ui.ctx().screen_rect().width() < 750.0 || ui.available_width() < 750.0;

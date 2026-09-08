@@ -10,6 +10,7 @@ pub struct ShoppingListView {
     pub show_export_dialog: bool,
     pub show_import_dialog: bool,
     pub status_message: Option<String>,
+    #[allow(dead_code)]
     pub pending_import_tx: Sender<Result<AppState, String>>,
     pub pending_import_rx: Receiver<Result<AppState, String>>,
 }

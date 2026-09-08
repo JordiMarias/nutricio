@@ -6,6 +6,7 @@ use crate::views::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActiveTab {
+    DailyJournal,
     MenuPlanner,
     Ingredients,
     Dishes,
@@ -16,30 +17,63 @@ pub struct NutricioApp {
     pub state: AppState,
     pub active_tab: ActiveTab,
     pub menu_planner_view: MenuPlannerView,
+    pub daily_journal_view: DailyJournalView,
     pub ingredients_view: IngredientsView,
     pub dishes_view: DishesView,
     pub shopping_list_view: ShoppingListView,
     pub status_notification: Option<(String, web_time::Instant)>,
+    #[allow(dead_code)]
     pub pending_state_tx: Sender<Result<AppState, String>>,
     pub pending_state_rx: Receiver<Result<AppState, String>>,
+    #[cfg(target_arch = "wasm32")]
+    pub last_saved_state: Option<AppState>,
+    #[cfg(target_arch = "wasm32")]
+    pub last_autosave_time: web_time::Instant,
 }
 
 impl NutricioApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         cc.egui_ctx.set_visuals(Visuals::dark());
 
+        #[cfg(target_arch = "wasm32")]
+        let (initial_state, notification) = {
+            if let Some(json) = crate::web_utils::web::load_from_local_storage() {
+                match load_state_from_json(&json) {
+                    Ok(s) => {
+                        let notif = if !s.is_empty() {
+                            Some(("🔄 Dades restaurades de la memòria del navegador".to_string(), web_time::Instant::now()))
+                        } else {
+                            None
+                        };
+                        (s, notif)
+                    }
+                    Err(_) => (AppState::empty(), None),
+                }
+            } else {
+                (AppState::empty(), None)
+            }
+        };
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let (initial_state, notification) = (AppState::empty(), None);
+
         let (pending_state_tx, pending_state_rx) = channel();
 
         Self {
-            state: AppState::empty(), // Start from scratch (empty)
-            active_tab: ActiveTab::MenuPlanner,
+            state: initial_state.clone(),
+            active_tab: ActiveTab::DailyJournal,
             menu_planner_view: MenuPlannerView::default(),
+            daily_journal_view: DailyJournalView::default(),
             ingredients_view: IngredientsView::default(),
             dishes_view: DishesView::default(),
             shopping_list_view: ShoppingListView::default(),
-            status_notification: None,
+            status_notification: notification,
             pending_state_tx,
             pending_state_rx,
+            #[cfg(target_arch = "wasm32")]
+            last_saved_state: Some(initial_state),
+            #[cfg(target_arch = "wasm32")]
+            last_autosave_time: web_time::Instant::now(),
         }
     }
 
@@ -138,6 +172,16 @@ impl NutricioApp {
             }
         }
     }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn sync_local_storage(&mut self) {
+        if self.last_saved_state.as_ref() != Some(&self.state) {
+            if let Ok(json) = save_state_to_json(&self.state) {
+                let _ = crate::web_utils::web::save_to_local_storage(&json);
+                self.last_saved_state = Some(self.state.clone());
+            }
+        }
+    }
 }
 
 impl eframe::App for NutricioApp {
@@ -147,6 +191,8 @@ impl eframe::App for NutricioApp {
             match res {
                 Ok(new_state) => {
                     self.state = new_state;
+                    #[cfg(target_arch = "wasm32")]
+                    self.sync_local_storage();
                     self.show_notification("✅ Fitxer carregat correctament!");
                     ctx.request_repaint();
                 }
@@ -178,6 +224,11 @@ impl eframe::App for NutricioApp {
                         ui.menu_button("⚙ Fitxer / Dades", |ui| {
                             if ui.button("🆕 Nou (Buidar)").clicked() {
                                 self.state = AppState::empty();
+                                #[cfg(target_arch = "wasm32")]
+                                {
+                                    let _ = crate::web_utils::web::clear_local_storage();
+                                    self.last_saved_state = Some(self.state.clone());
+                                }
                                 self.show_notification("✨ Iniciat de zero");
                                 ui.close_menu();
                             }
@@ -190,28 +241,25 @@ impl eframe::App for NutricioApp {
                                 self.save_file_dialog();
                                 ui.close_menu();
                             }
-                            ui.separator();
-                            if ui.button("🌱 Carregar Dades d'Exemple").clicked() {
-                                self.state = AppState::with_seed_data();
-                                self.show_notification("🌱 Dades d'exemple carregades");
-                                ui.close_menu();
-                            }
                         });
                     });
                 });
 
                 ui.add_space(3.0);
-                ui.columns(4, |cols| {
-                    if cols[0].selectable_label(self.active_tab == ActiveTab::MenuPlanner, "📅 Menú").clicked() {
+                ui.columns(5, |cols| {
+                    if cols[0].selectable_label(self.active_tab == ActiveTab::DailyJournal, "📝 Diari").clicked() {
+                        self.active_tab = ActiveTab::DailyJournal;
+                    }
+                    if cols[1].selectable_label(self.active_tab == ActiveTab::MenuPlanner, "📅 Menús").clicked() {
                         self.active_tab = ActiveTab::MenuPlanner;
                     }
-                    if cols[1].selectable_label(self.active_tab == ActiveTab::Ingredients, "🥦 Alim.").clicked() {
+                    if cols[2].selectable_label(self.active_tab == ActiveTab::Ingredients, "🥦 Alim.").clicked() {
                         self.active_tab = ActiveTab::Ingredients;
                     }
-                    if cols[2].selectable_label(self.active_tab == ActiveTab::Dishes, "🍲 Plats").clicked() {
+                    if cols[3].selectable_label(self.active_tab == ActiveTab::Dishes, "🍲 Plats").clicked() {
                         self.active_tab = ActiveTab::Dishes;
                     }
-                    if cols[3].selectable_label(self.active_tab == ActiveTab::ShoppingList, "🛒 Compra").clicked() {
+                    if cols[4].selectable_label(self.active_tab == ActiveTab::ShoppingList, "🛒 Compra").clicked() {
                         self.active_tab = ActiveTab::ShoppingList;
                     }
                 });
@@ -221,6 +269,11 @@ impl eframe::App for NutricioApp {
                     ui.menu_button("📄 Fitxer", |ui| {
                         if ui.button("🆕 Nou (Començar de zero)").clicked() {
                             self.state = AppState::empty();
+                            #[cfg(target_arch = "wasm32")]
+                            {
+                                let _ = crate::web_utils::web::clear_local_storage();
+                                self.last_saved_state = Some(self.state.clone());
+                            }
                             self.show_notification("✨ Iniciat de zero");
                             ui.close_menu();
                         }
@@ -233,22 +286,19 @@ impl eframe::App for NutricioApp {
                             self.save_file_dialog();
                             ui.close_menu();
                         }
-                        ui.separator();
-                        if ui.button("🌱 Carregar Dades d'Exemple").clicked() {
-                            self.state = AppState::with_seed_data();
-                            self.show_notification("🌱 Dades d'exemple carregades");
-                            ui.close_menu();
-                        }
                     });
 
                     ui.separator();
                     ui.heading("🍏 Nutrició & Despesa Alimentària");
                     ui.add_space(20.0);
 
-                    if ui.selectable_label(self.active_tab == ActiveTab::MenuPlanner, "📅 Planificador de Menú").clicked() {
+                    if ui.selectable_label(self.active_tab == ActiveTab::DailyJournal, "📝 Seguiment Diari").clicked() {
+                        self.active_tab = ActiveTab::DailyJournal;
+                    }
+                    if ui.selectable_label(self.active_tab == ActiveTab::MenuPlanner, "📅 Planificador de Menús").clicked() {
                         self.active_tab = ActiveTab::MenuPlanner;
                     }
-                    if ui.selectable_label(self.active_tab == ActiveTab::Ingredients, "🥦 Catàleg d'Aliments & Bonpreu").clicked() {
+                    if ui.selectable_label(self.active_tab == ActiveTab::Ingredients, "🥦 Catàleg d'Aliments").clicked() {
                         self.active_tab = ActiveTab::Ingredients;
                     }
                     if ui.selectable_label(self.active_tab == ActiveTab::Dishes, "🍲 Editor de Plats").clicked() {
@@ -280,6 +330,9 @@ impl eframe::App for NutricioApp {
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
                     match self.active_tab {
+                        ActiveTab::DailyJournal => {
+                            self.daily_journal_view.ui(ui, &mut self.state);
+                        }
                         ActiveTab::MenuPlanner => {
                             self.menu_planner_view.ui(ui, &mut self.state);
                         }
@@ -295,6 +348,15 @@ impl eframe::App for NutricioApp {
                     }
                 });
         });
+
+        // Background autosave to localStorage for WASM
+        #[cfg(target_arch = "wasm32")]
+        {
+            if self.last_autosave_time.elapsed().as_millis() > 500 {
+                self.sync_local_storage();
+                self.last_autosave_time = web_time::Instant::now();
+            }
+        }
     }
 }
 

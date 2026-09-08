@@ -253,6 +253,48 @@ mod tests {
         assert!((g2_pct - 60.0).abs() < 0.5);
         assert!((g4_pct - 13.33).abs() < 0.5);
     }
+
+    #[test]
+    fn test_daily_journal_tracking_and_serialization() {
+        let mut state = nutricio::storage::AppState::empty();
+
+        let mut apple = Ingredient::new("ing_poma", "Poma Golden", NutritionalInfo {
+            kcal: 52.0,
+            fat_g: 0.2,
+            saturated_fat_g: 0.0,
+            carbs_g: 14.0,
+            sugars_g: 10.0,
+            fiber_g: 2.4,
+            protein_g: 0.3,
+            salt_g: 0.0,
+            price_euro: 0.40,
+        });
+        apple.nova_group = Some(NovaGroup::Group1Unprocessed);
+        state.ingredients.push(apple);
+
+        // Add to breakfast in daily journal
+        {
+            let log = state.get_or_create_daily_log("2026-09-08", "Dimarts");
+            let entries = log.daily_menu.meals.entry(MealType::Breakfast).or_insert_with(Vec::new);
+            entries.push(MealEntry {
+                id: "entry_1".to_string(),
+                item_id: "ing_poma".to_string(),
+                is_dish: false,
+                quantity: 150.0, // 150g -> 78 kcal
+            });
+        }
+
+        let total = state.daily_journal[0].daily_menu.calculate_total_nutrition(&state.ingredients, &state.dishes);
+        assert!((total.kcal - 78.0).abs() < 0.1);
+
+        // Test JSON serialization & roundtrip
+        let json = nutricio::storage::save_state_to_json(&state).expect("Serialization failed");
+        let loaded = nutricio::storage::load_state_from_json(&json).expect("Deserialization failed");
+
+        assert_eq!(loaded.daily_journal.len(), 1);
+        assert_eq!(loaded.daily_journal[0].date, "2026-09-08");
+        assert_eq!(loaded.daily_journal[0].daily_menu.meals.get(&MealType::Breakfast).unwrap().len(), 1);
+    }
 }
 
 

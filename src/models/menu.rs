@@ -149,11 +149,24 @@ pub struct WeeklyMenu {
 
 impl Default for WeeklyMenu {
     fn default() -> Self {
-        let days_names = ["Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres", "Dissabte", "Diumenge"];
-        let days = days_names.iter().map(|name| DailyMenu::new(*name)).collect();
         Self {
-            name: "Menú Setmanal Tipus".to_string(),
-            days,
+            name: "Planificador de Menús".to_string(),
+            days: vec![DailyMenu::new("Menú 1")],
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DailyLog {
+    pub date: String, // Format ISO "YYYY-MM-DD"
+    pub daily_menu: DailyMenu,
+}
+
+impl DailyLog {
+    pub fn new(date: impl Into<String>, day_label: impl Into<String>) -> Self {
+        Self {
+            date: date.into(),
+            daily_menu: DailyMenu::new(day_label),
         }
     }
 }

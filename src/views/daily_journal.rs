@@ -1,15 +1,18 @@
 use egui::{Color32, ProgressBar, Ui};
+use chrono::{Datelike, Local, NaiveDate};
 
-use crate::exporter::generate_daily_menu_report_html;
+use crate::exporter::generate_daily_journal_report_html;
 use crate::models::*;
 use crate::storage::AppState;
+use crate::views::menu_planner::{draw_glycemic_badge, draw_nova_badge};
 
-
-pub struct MenuPlannerView {
-    pub selected_day_idx: usize,
+pub struct DailyJournalView {
+    pub selected_date: String,
     pub selected_meal: Option<MealType>,
     pub show_add_item_dialog: bool,
     pub show_edit_goals_modal: bool,
+    pub show_copy_confirm_dialog: bool,
+    pub copy_source_day_idx: usize,
     pub add_is_dish: bool,
     pub add_item_id: String,
     pub add_quantity: f64,
@@ -17,13 +20,15 @@ pub struct MenuPlannerView {
     pub export_message: Option<String>,
 }
 
-impl Default for MenuPlannerView {
+impl Default for DailyJournalView {
     fn default() -> Self {
         Self {
-            selected_day_idx: 0,
+            selected_date: get_today_date_str(),
             selected_meal: None,
             show_add_item_dialog: false,
             show_edit_goals_modal: false,
+            show_copy_confirm_dialog: false,
+            copy_source_day_idx: 0,
             add_is_dish: false,
             add_item_id: String::new(),
             add_quantity: 100.0,
@@ -33,60 +38,125 @@ impl Default for MenuPlannerView {
     }
 }
 
-impl MenuPlannerView {
-    pub fn ui(&mut self, ui: &mut Ui, state: &mut AppState) {
-        if state.weekly_menu.days.is_empty() {
-            state.weekly_menu.days.push(DailyMenu::new("Menú 1"));
+pub fn get_today_date_str() -> String {
+    Local::now().format("%Y-%m-%d").to_string()
+}
+
+pub fn format_catalan_date(date_str: &str) -> String {
+    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        let weekday_ca = match d.weekday() {
+            chrono::Weekday::Mon => "Dilluns",
+            chrono::Weekday::Tue => "Dimarts",
+            chrono::Weekday::Wed => "Dimecres",
+            chrono::Weekday::Thu => "Dijous",
+            chrono::Weekday::Fri => "Divendres",
+            chrono::Weekday::Sat => "Dissabte",
+            chrono::Weekday::Sun => "Diumenge",
+        };
+        let month_ca = match d.month() {
+            1 => "gener",
+            2 => "febrer",
+            3 => "març",
+            4 => "abril",
+            5 => "maig",
+            6 => "juny",
+            7 => "juliol",
+            8 => "agost",
+            9 => "setembre",
+            10 => "octubre",
+            11 => "novembre",
+            12 => "desembre",
+            _ => "",
+        };
+        format!("{}, {} de {} de {}", weekday_ca, d.day(), month_ca, d.year())
+    } else {
+        date_str.to_string()
+    }
+}
+
+pub fn get_weekday_name_catalan(date_str: &str) -> &'static str {
+    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        match d.weekday() {
+            chrono::Weekday::Mon => "Dilluns",
+            chrono::Weekday::Tue => "Dimarts",
+            chrono::Weekday::Wed => "Dimecres",
+            chrono::Weekday::Thu => "Dijous",
+            chrono::Weekday::Fri => "Divendres",
+            chrono::Weekday::Sat => "Dissabte",
+            chrono::Weekday::Sun => "Diumenge",
         }
-        if self.selected_day_idx >= state.weekly_menu.days.len() {
-            self.selected_day_idx = 0;
+    } else {
+        "Dilluns"
+    }
+}
+
+pub fn offset_date(date_str: &str, days_delta: i64) -> String {
+    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        let new_d = if days_delta >= 0 {
+            d.checked_add_signed(chrono::Duration::days(days_delta))
+        } else {
+            d.checked_sub_signed(chrono::Duration::days(-days_delta))
+        };
+        if let Some(nd) = new_d {
+            return nd.format("%Y-%m-%d").to_string();
+        }
+    }
+    date_str.to_string()
+}
+
+impl DailyJournalView {
+    pub fn ui(&mut self, ui: &mut Ui, state: &mut AppState) {
+        let today_str = get_today_date_str();
+        if self.selected_date.is_empty() {
+            self.selected_date = today_str.clone();
         }
 
-        ui.heading("📅 Planificador de Menús");
-        ui.label("Crea i gestiona els teus menús planificats amb el nom que vulguis.");
+        let is_today = self.selected_date == today_str;
+        let weekday_name = get_weekday_name_catalan(&self.selected_date);
+        let formatted_date = format_catalan_date(&self.selected_date);
+
+        // Ensure daily log exists in state
+        if !state.daily_journal.iter().any(|l| l.date == self.selected_date) {
+            state.daily_journal.push(DailyLog::new(&self.selected_date, weekday_name));
+        }
+        let log_idx = state.daily_journal.iter().position(|l| l.date == self.selected_date).unwrap();
+
+        ui.heading("📝 Seguiment Diari d'Àpats (Food Journal)");
+        ui.label("Registra tot el que menges dia a dia per controlar la teva nutrició i despesa real.");
         ui.add_space(6.0);
 
         let is_mobile = ui.ctx().screen_rect().width() < 750.0 || ui.available_width() < 750.0;
 
-        let mut add_new_day = false;
-        let mut duplicate_current_day = false;
-        let mut delete_current_day = false;
         let mut trigger_export = false;
 
+        // SECTION 0: Date Navigation & Actions Bar
         ui.group(|ui| {
-            // Row 1: Planned Menu Selection Tabs & '+ Nou Menú'
-            ui.horizontal_wrapped(|ui| {
-                ui.strong("Menús planificats:");
-                for (idx, day) in state.weekly_menu.days.iter().enumerate() {
-                    let is_selected = self.selected_day_idx == idx;
-                    if ui.selectable_label(is_selected, format!("📋 {}", day.day_name)).clicked() {
-                        self.selected_day_idx = idx;
-                    }
-                }
-                if ui.button("➕ Nou Menú").clicked() {
-                    add_new_day = true;
-                }
-            });
-
-            ui.add_space(4.0);
-            ui.separator();
-            ui.add_space(4.0);
-
-            // Row 2: Selected Day Name Editor & Actions
-            let has_multiple_days = state.weekly_menu.days.len() > 1;
-            let day = &mut state.weekly_menu.days[self.selected_day_idx];
             if is_mobile {
+                // Mobile layout for Date Navigation
                 ui.horizontal(|ui| {
-                    ui.label("📝 Nom:");
-                    ui.text_edit_singleline(&mut day.day_name);
-                });
-                ui.add_space(3.0);
-                ui.horizontal_wrapped(|ui| {
-                    if ui.button("📋 Duplicar").clicked() {
-                        duplicate_current_day = true;
+                    if ui.button("◀ Ahir").clicked() {
+                        self.selected_date = offset_date(&self.selected_date, -1);
                     }
-                    if has_multiple_days && ui.button("🗑 Eliminar").clicked() {
-                        delete_current_day = true;
+                    if ui.selectable_label(is_today, "📅 Avui").clicked() {
+                        self.selected_date = today_str.clone();
+                    }
+                    if ui.button("Demà ▶").clicked() {
+                        self.selected_date = offset_date(&self.selected_date, 1);
+                    }
+                });
+
+                ui.add_space(3.0);
+                ui.horizontal(|ui| {
+                    ui.strong(format!("📅 {}", formatted_date));
+                    if is_today {
+                        ui.colored_label(Color32::from_rgb(46, 125, 50), "(Avui)");
+                    }
+                });
+
+                ui.add_space(4.0);
+                ui.horizontal_wrapped(|ui| {
+                    if ui.button("📋 Copiar Menú Planificat").clicked() {
+                        self.show_copy_confirm_dialog = true;
                     }
                     if ui.button("💾 Exportar HTML").clicked() {
                         trigger_export = true;
@@ -94,81 +164,71 @@ impl MenuPlannerView {
                     if ui.button("⚙ Objectius").clicked() {
                         self.show_edit_goals_modal = true;
                     }
+                    if ui.button("🗑 Buidar Dia").clicked() {
+                        for entries in state.daily_journal[log_idx].daily_menu.meals.values_mut() {
+                            entries.clear();
+                        }
+                    }
                 });
             } else {
+                // Desktop layout for Date Navigation
                 ui.horizontal(|ui| {
-                    ui.label("📝 Nom del menú:");
-                    ui.add(egui::TextEdit::singleline(&mut day.day_name).desired_width(200.0));
-
-                    if ui.button("📋 Duplicar Menú").clicked() {
-                        duplicate_current_day = true;
+                    if ui.button("◀ Dia Anterior").clicked() {
+                        self.selected_date = offset_date(&self.selected_date, -1);
                     }
-                    if has_multiple_days && ui.button("🗑 Eliminar Menú").clicked() {
-                        delete_current_day = true;
+                    if ui.selectable_label(is_today, "📅 Avui").clicked() {
+                        self.selected_date = today_str.clone();
+                    }
+                    if ui.button("Dia Següent ▶").clicked() {
+                        self.selected_date = offset_date(&self.selected_date, 1);
+                    }
+
+                    ui.separator();
+                    ui.heading(format!("📅 {}", formatted_date));
+                    if is_today {
+                        ui.colored_label(Color32::from_rgb(46, 125, 50), " [AVUI]");
+                    }
+
+                    // Jump to existing recorded days combo
+                    if state.daily_journal.len() > 1 {
+                        ui.separator();
+                        ui.label("Historial:");
+                        let current_d = self.selected_date.clone();
+                        egui::ComboBox::from_id_salt("journal_date_history_combo")
+                            .selected_text(&current_d)
+                            .show_ui(ui, |ui| {
+                                for log in &state.daily_journal {
+                                    let is_selected = self.selected_date == log.date;
+                                    let text = format!("{} ({})", log.date, log.daily_menu.day_name);
+                                    if ui.selectable_label(is_selected, text).clicked() {
+                                        self.selected_date = log.date.clone();
+                                    }
+                                }
+                            });
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("🗑 Buidar Dia").clicked() {
+                            for entries in state.daily_journal[log_idx].daily_menu.meals.values_mut() {
+                                entries.clear();
+                            }
+                        }
                         if ui.button("⚙ Personalitzar Objectius").clicked() {
                             self.show_edit_goals_modal = true;
                         }
-                        if ui.button("💾 Guardar Menú en PDF / HTML...").clicked() {
+                        if ui.button("💾 Guardar Registre en PDF / HTML...").clicked() {
                             trigger_export = true;
+                        }
+                        if ui.button("📋 Copiar del Menú Planificat").clicked() {
+                            self.show_copy_confirm_dialog = true;
                         }
                     });
                 });
             }
         });
 
-        if add_new_day {
-            let new_num = state.weekly_menu.days.len() + 1;
-            state.weekly_menu.days.push(DailyMenu::new(format!("Menú {}", new_num)));
-            self.selected_day_idx = state.weekly_menu.days.len() - 1;
-        }
-
-        if duplicate_current_day {
-            let current = &state.weekly_menu.days[self.selected_day_idx];
-            let mut cloned = current.clone();
-            cloned.day_name = format!("{} (Còpia)", current.day_name);
-            state.weekly_menu.days.push(cloned);
-            self.selected_day_idx = state.weekly_menu.days.len() - 1;
-        }
-
-        if delete_current_day && state.weekly_menu.days.len() > 1 {
-            state.weekly_menu.days.remove(self.selected_day_idx);
-            if self.selected_day_idx >= state.weekly_menu.days.len() {
-                self.selected_day_idx = state.weekly_menu.days.len() - 1;
-            }
-        }
-
         if trigger_export {
-            let day_name = state.weekly_menu.days.get(self.selected_day_idx).map(|d| d.day_name.as_str()).unwrap_or("menu");
-            let file_name = format!("menu_{}.html", day_name.to_lowercase().replace(' ', "_"));
-            let html = generate_daily_menu_report_html(state, self.selected_day_idx);
-
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                if let Some(path) = rfd::FileDialog::new()
-                    .add_filter("Document HTML (PDF)", &["html"])
-                    .set_file_name(&file_name)
-                    .set_title(format!("Guardar Informe de {}", day_name))
-                    .save_file()
-                {
-                    if std::fs::write(&path, &html).is_ok() {
-                        self.export_message = Some(format!("💾 Fitxer desat amb èxit a: {}", path.display()));
-                    } else {
-                        self.export_message = Some("❌ Error en escriure el fitxer en disc".into());
-                    }
-                }
-            }
-
-            #[cfg(target_arch = "wasm32")]
-            {
-                if let Err(e) = crate::web_utils::web::download_file(&file_name, "text/html", html.as_bytes()) {
-                    self.export_message = Some(format!("❌ Error en descarregar HTML: {:?}", e));
-                } else {
-                    self.export_message = Some(format!("💾 S'ha descarregat {}!", file_name));
-                }
-            }
+            self.export_daily_log(state);
         }
 
         if let Some(msg) = &self.export_message {
@@ -178,20 +238,14 @@ impl MenuPlannerView {
 
         ui.separator();
 
-        let current_day_name = state.weekly_menu.days[self.selected_day_idx].day_name.clone();
-
-        ui.horizontal(|ui| {
-            ui.heading(format!("Contingut de: 📋 {}", current_day_name));
-        });
-
-        ui.add_space(6.0);
+        // Destructure state to avoid borrowing conflicts
+        let AppState { ingredients, dishes, weekly_menu, goals, daily_journal } = state;
+        let log = &mut daily_journal[log_idx];
 
         // SECTION 1: Meals of the Selected Day
         ui.group(|ui| {
-            ui.heading("Àpats del Dia");
+            ui.heading(format!("Àpats Ingerits &mdash; {}", formatted_date));
             ui.add_space(4.0);
-
-            let day = &mut state.weekly_menu.days[self.selected_day_idx];
 
             for meal_type in MealType::all() {
                 ui.group(|ui| {
@@ -211,22 +265,22 @@ impl MenuPlannerView {
 
                     ui.separator();
 
-                    let entries = day.meals.entry(meal_type).or_insert_with(Vec::new);
+                    let entries = log.daily_menu.meals.entry(meal_type).or_insert_with(Vec::new);
 
                     if entries.is_empty() {
-                        ui.label(" (Sense aliments afegits)");
+                        ui.label(" (Sense aliments registrats per a aquest àpat)");
                     } else if is_mobile {
                         // Responsive mobile card layout
                         let mut to_remove = None;
                         for (entry_idx, entry) in entries.iter_mut().enumerate() {
                             ui.group(|ui| {
                                 if entry.is_dish {
-                                    if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
-                                        let nova = dish.derived_nova_group(&state.ingredients);
-                                        let ig = dish.derived_glycemic_index(&state.ingredients);
-                                        let level = dish.derived_glycemic_level(&state.ingredients);
-                                        let cg = dish.calculate_glycemic_load(&state.ingredients) * entry.quantity;
-                                        let nut = dish.calculate_total_nutrition(&state.ingredients).scale(entry.quantity);
+                                    if let Some(dish) = dishes.iter().find(|d| d.id == entry.item_id) {
+                                        let nova = dish.derived_nova_group(ingredients);
+                                        let ig = dish.derived_glycemic_index(ingredients);
+                                        let level = dish.derived_glycemic_level(ingredients);
+                                        let cg = dish.calculate_glycemic_load(ingredients) * entry.quantity;
+                                        let nut = dish.calculate_total_nutrition(ingredients).scale(entry.quantity);
 
                                         ui.horizontal(|ui| {
                                             draw_nova_badge(ui, nova);
@@ -259,7 +313,7 @@ impl MenuPlannerView {
                                         ui.label(format!("Plat desconegut ({})", entry.item_id));
                                     }
                                 } else {
-                                    if let Some(ing) = state.ingredients.iter().find(|i| i.id == entry.item_id) {
+                                    if let Some(ing) = ingredients.iter().find(|i| i.id == entry.item_id) {
                                         let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
                                         let ig = ing.get_glycemic_index();
                                         let level = ing.get_glycemic_level();
@@ -311,7 +365,7 @@ impl MenuPlannerView {
                         }
                     } else {
                         // Desktop table layout
-                        egui::Grid::new(format!("meal_grid_{:?}", meal_type))
+                        egui::Grid::new(format!("journal_meal_grid_{:?}", meal_type))
                             .striped(true)
                             .spacing([12.0, 6.0])
                             .show(ui, |ui| {
@@ -331,11 +385,11 @@ impl MenuPlannerView {
 
                                 for (entry_idx, entry) in entries.iter_mut().enumerate() {
                                     if entry.is_dish {
-                                        if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
-                                            let nova = dish.derived_nova_group(&state.ingredients);
-                                            let ig = dish.derived_glycemic_index(&state.ingredients);
-                                            let level = dish.derived_glycemic_level(&state.ingredients);
-                                            let cg = dish.calculate_glycemic_load(&state.ingredients) * entry.quantity;
+                                        if let Some(dish) = dishes.iter().find(|d| d.id == entry.item_id) {
+                                            let nova = dish.derived_nova_group(ingredients);
+                                            let ig = dish.derived_glycemic_index(ingredients);
+                                            let level = dish.derived_glycemic_level(ingredients);
+                                            let cg = dish.calculate_glycemic_load(ingredients) * entry.quantity;
 
                                             ui.horizontal(|ui| {
                                                 draw_nova_badge(ui, nova);
@@ -343,13 +397,12 @@ impl MenuPlannerView {
                                                 ui.label(format!("🍲 {}", dish.name));
                                             });
 
-                                            // Editable portion quantity
                                             ui.horizontal(|ui| {
                                                 ui.add(egui::DragValue::new(&mut entry.quantity).speed(0.1).range(0.1..=20.0).max_decimals(2));
                                                 ui.small("racions");
                                             });
 
-                                            let nut = dish.calculate_total_nutrition(&state.ingredients).scale(entry.quantity);
+                                            let nut = dish.calculate_total_nutrition(ingredients).scale(entry.quantity);
                                             ui.label(format!("{:.0}", nut.kcal));
                                             ui.label(format!("{:.1}g ({:.1}g)", nut.fat_g, nut.saturated_fat_g));
                                             ui.label(format!("{:.1}g ({:.1}g) [CG {:.1}]", nut.carbs_g, nut.sugars_g, cg));
@@ -364,7 +417,7 @@ impl MenuPlannerView {
                                             }
                                         }
                                     } else {
-                                        if let Some(ing) = state.ingredients.iter().find(|i| i.id == entry.item_id) {
+                                        if let Some(ing) = ingredients.iter().find(|i| i.id == entry.item_id) {
                                             let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
                                             let ig = ing.get_glycemic_index();
                                             let level = ing.get_glycemic_level();
@@ -376,7 +429,6 @@ impl MenuPlannerView {
                                                 ui.label(format!("🥗 {}", ing.name));
                                             });
 
-                                            // Editable portion quantity
                                             let (speed, unit_str, max_range) = match ing.unit_type {
                                                 UnitType::Per100g => (0.1, "g", 3000.0),
                                                 UnitType::PerUnit { .. } => (0.1, "ut", 50.0),
@@ -418,16 +470,16 @@ impl MenuPlannerView {
                 ui.add_space(4.0);
             }
         });
+
         ui.add_space(12.0);
 
         // SECTION 2: Nutritional Dashboard & Goals (Full width underneath meals)
         ui.group(|ui| {
-            ui.heading("Resum Nutricional i Objectius Diaris");
+            ui.heading(format!("Resum Nutricional Real del Dia ({})", formatted_date));
             ui.add_space(6.0);
 
-            let day = &state.weekly_menu.days[self.selected_day_idx];
-            let total_nut = day.calculate_total_nutrition(&state.ingredients, &state.dishes);
-            let goals = &state.goals;
+            let day_menu = &log.daily_menu;
+            let total_nut = day_menu.calculate_total_nutrition(ingredients, dishes);
 
             ui.group(|ui| {
                 ui.strong("⚡ Valor Energètic Totals");
@@ -496,7 +548,7 @@ impl MenuPlannerView {
 
             ui.group(|ui| {
                 ui.strong("📈 Índex i Càrrega Glucèmica (CG)");
-                let total_cg = day.calculate_total_glycemic_load(&state.ingredients, &state.dishes);
+                let total_cg = day_menu.calculate_total_glycemic_load(ingredients, dishes);
                 let cg_ratio = (total_cg / goals.max_glycemic_load).min(1.0);
                 let cg_color = if total_cg <= goals.max_glycemic_load {
                     Color32::from_rgb(46, 125, 50)
@@ -516,7 +568,7 @@ impl MenuPlannerView {
 
             ui.group(|ui| {
                 ui.strong("🏷 Classificació i Qualitat NOVA");
-                let nova_map = day.nova_breakdown(&state.ingredients, &state.dishes);
+                let nova_map = day_menu.nova_breakdown(ingredients, dishes);
                 let total_k = total_nut.kcal;
 
                 for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
@@ -590,11 +642,73 @@ impl MenuPlannerView {
 
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.strong("💶 Despesa Estimada Diària:");
+                    ui.strong("💶 Despesa Real Diària:");
                     ui.heading(format!("{:.2} €", total_nut.price_euro));
                 });
             });
         });
+
+        // Copy Plan Confirmation Dialog
+        if self.show_copy_confirm_dialog {
+            let mut close_dialog = false;
+            let mut do_copy = false;
+
+            egui::Window::new("📋 Copiar Menú Planificat")
+                .collapsible(false)
+                .resizable(false)
+                .default_size([420.0, 200.0])
+                .show(ui.ctx(), |ui| {
+                    ui.label(format!(
+                        "Selecciona el menú que vols copiar al registre del dia {}:",
+                        self.selected_date
+                    ));
+                    ui.add_space(6.0);
+
+                    if self.copy_source_day_idx >= weekly_menu.days.len() {
+                        self.copy_source_day_idx = 0;
+                    }
+
+                    let current_source_name = weekly_menu.days.get(self.copy_source_day_idx)
+                        .map(|d| d.day_name.as_str())
+                        .unwrap_or("Menú");
+
+                    egui::ComboBox::from_id_salt("journal_copy_source_combo")
+                        .selected_text(format!("📋 {}", current_source_name))
+                        .show_ui(ui, |ui| {
+                            for (idx, day) in weekly_menu.days.iter().enumerate() {
+                                let is_selected = self.copy_source_day_idx == idx;
+                                if ui.selectable_label(is_selected, format!("📋 {}", day.day_name)).clicked() {
+                                    self.copy_source_day_idx = idx;
+                                }
+                            }
+                        });
+
+                    ui.add_space(8.0);
+                    ui.colored_label(Color32::YELLOW, "Nota: Això substituirà els àpats actuals d'aquesta data.");
+                    ui.add_space(10.0);
+
+                    ui.horizontal(|ui| {
+                        if ui.button("✅ Sí, copiar").clicked() {
+                            do_copy = true;
+                            close_dialog = true;
+                        }
+                        if ui.button("Cancel·lar").clicked() {
+                            close_dialog = true;
+                        }
+                    });
+                });
+
+            if do_copy {
+                if let Some(planned_day) = weekly_menu.days.get(self.copy_source_day_idx) {
+                    log.daily_menu.meals = planned_day.meals.clone();
+                    self.export_message = Some(format!("📋 S'han copiat els àpats de '{}' al registre diari!", planned_day.day_name));
+                }
+            }
+
+            if close_dialog {
+                self.show_copy_confirm_dialog = false;
+            }
+        }
 
         // Add Item Modal Dialog
         if self.show_add_item_dialog {
@@ -630,21 +744,21 @@ impl MenuPlannerView {
                     egui::ScrollArea::vertical().max_height(220.0).show(ui, |ui| {
                         let q = self.picker_search.to_lowercase();
                         if self.add_is_dish {
-                            if state.dishes.is_empty() {
+                            if dishes.is_empty() {
                                 ui.label("Cap plat creat encara. Ves a la pestanya 'Editor de Plats' per crear-ne.");
                             } else {
-                                for dish in &state.dishes {
+                                for dish in dishes.iter() {
                                     if !q.is_empty() && !dish.name.to_lowercase().contains(&q) {
                                         continue;
                                     }
                                     let is_sel = self.add_item_id == dish.id;
                                     ui.horizontal(|ui| {
-                                        let nova = dish.derived_nova_group(&state.ingredients);
-                                        let ig = dish.derived_glycemic_index(&state.ingredients);
-                                        let level = dish.derived_glycemic_level(&state.ingredients);
+                                        let nova = dish.derived_nova_group(ingredients);
+                                        let ig = dish.derived_glycemic_index(ingredients);
+                                        let level = dish.derived_glycemic_level(ingredients);
                                         draw_nova_badge(ui, nova);
                                         draw_glycemic_badge(ui, level, ig);
-                                        let nut = dish.calculate_total_nutrition(&state.ingredients);
+                                        let nut = dish.calculate_total_nutrition(ingredients);
                                         let label_text = format!("🍲 {} ({:.0} Kcal)", dish.name, nut.kcal);
 
                                         if ui.selectable_label(is_sel, label_text).clicked() {
@@ -655,10 +769,10 @@ impl MenuPlannerView {
                                 }
                             }
                         } else {
-                            if state.ingredients.is_empty() {
+                            if ingredients.is_empty() {
                                 ui.label("La base de dades d'aliments està buida.");
                             } else {
-                                for ing in &state.ingredients {
+                                for ing in ingredients.iter() {
                                     if !q.is_empty() && !ing.name.to_lowercase().contains(&q) && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&q) {
                                         continue;
                                     }
@@ -692,7 +806,7 @@ impl MenuPlannerView {
 
                     if !self.add_item_id.is_empty() {
                         if self.add_is_dish {
-                            if let Some(dish) = state.dishes.iter().find(|d| d.id == self.add_item_id) {
+                            if let Some(dish) = dishes.iter().find(|d| d.id == self.add_item_id) {
                                 ui.strong(format!("Seleccionat: 🍲 {}", dish.name));
                                 ui.horizontal(|ui| {
                                     ui.label("Racions:");
@@ -700,7 +814,7 @@ impl MenuPlannerView {
                                 });
                             }
                         } else {
-                            if let Some(ing) = state.ingredients.iter().find(|i| i.id == self.add_item_id) {
+                            if let Some(ing) = ingredients.iter().find(|i| i.id == self.add_item_id) {
                                 ui.strong(format!("Seleccionat: 🥗 {}", ing.name));
                                 let (label_text, speed, max_val) = match ing.unit_type {
                                     UnitType::Per100g => ("Quantitat (g):", 0.1, 3000.0),
@@ -721,8 +835,7 @@ impl MenuPlannerView {
                     ui.horizontal(|ui| {
                         if ui.button("➕ Afegir a l'Àpat").clicked() {
                             if !self.add_item_id.is_empty() {
-                                let day = &mut state.weekly_menu.days[self.selected_day_idx];
-                                let entries = day.meals.entry(meal).or_insert_with(Vec::new);
+                                let entries = log.daily_menu.meals.entry(meal).or_insert_with(Vec::new);
                                 entries.push(MealEntry {
                                     id: format!("{}_{}", self.add_item_id, entries.len()),
                                     item_id: self.add_item_id.clone(),
@@ -756,60 +869,60 @@ impl MenuPlannerView {
 
                     ui.horizontal(|ui| {
                         ui.label("Kcal Mínimes:");
-                        ui.add(egui::DragValue::new(&mut state.goals.min_kcal).speed(10.0).range(500.0..=5000.0));
+                        ui.add(egui::DragValue::new(&mut goals.min_kcal).speed(10.0).range(500.0..=5000.0));
                         ui.label("Kcal Màximes:");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_kcal).speed(10.0).range(500.0..=6000.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_kcal).speed(10.0).range(500.0..=6000.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Greixos % Mín:");
-                        ui.add(egui::DragValue::new(&mut state.goals.min_fat_pct).speed(1.0).range(5.0..=50.0));
+                        ui.add(egui::DragValue::new(&mut goals.min_fat_pct).speed(1.0).range(5.0..=50.0));
                         ui.label("% Màx:");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_fat_pct).speed(1.0).range(10.0..=60.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_fat_pct).speed(1.0).range(10.0..=60.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Greixos Saturats Màx (g):");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_saturated_fat_g).speed(1.0).range(5.0..=100.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_saturated_fat_g).speed(1.0).range(5.0..=100.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Hidrats Carboni % Mín:");
-                        ui.add(egui::DragValue::new(&mut state.goals.min_carbs_pct).speed(1.0).range(10.0..=70.0));
+                        ui.add(egui::DragValue::new(&mut goals.min_carbs_pct).speed(1.0).range(10.0..=70.0));
                         ui.label("% Màx:");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_carbs_pct).speed(1.0).range(20.0..=80.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_carbs_pct).speed(1.0).range(20.0..=80.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Sucres Màx (% de macros):");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_sugar_macro_pct).speed(1.0).range(1.0..=30.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_sugar_macro_pct).speed(1.0).range(1.0..=30.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Proteïna Mín (g):");
-                        ui.add(egui::DragValue::new(&mut state.goals.min_protein_g).speed(5.0).range(30.0..=300.0));
+                        ui.add(egui::DragValue::new(&mut goals.min_protein_g).speed(5.0).range(30.0..=300.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Fibra Mín (g):");
-                        ui.add(egui::DragValue::new(&mut state.goals.min_fiber_g).speed(1.0).range(10.0..=100.0));
+                        ui.add(egui::DragValue::new(&mut goals.min_fiber_g).speed(1.0).range(10.0..=100.0));
                         ui.label("Ideal (g):");
-                        ui.add(egui::DragValue::new(&mut state.goals.ideal_fiber_g).speed(1.0).range(15.0..=120.0));
+                        ui.add(egui::DragValue::new(&mut goals.ideal_fiber_g).speed(1.0).range(15.0..=120.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Sal Màx (g):");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_salt_g).speed(0.5).range(1.0..=20.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_salt_g).speed(0.5).range(1.0..=20.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Ultraprocessats Màx (% Kcal):");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_ultraprocessed_pct).speed(1.0).range(0.0..=50.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_ultraprocessed_pct).speed(1.0).range(0.0..=50.0));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Càrrega Glucèmica Màx (CG):");
-                        ui.add(egui::DragValue::new(&mut state.goals.max_glycemic_load).speed(5.0).range(20.0..=300.0));
+                        ui.add(egui::DragValue::new(&mut goals.max_glycemic_load).speed(5.0).range(20.0..=300.0));
                     });
 
                     ui.separator();
@@ -819,7 +932,7 @@ impl MenuPlannerView {
                             close_modal = true;
                         }
                         if ui.button("Restablir Valors per Defecte").clicked() {
-                            state.goals = NutritionalGoals::default();
+                            *goals = NutritionalGoals::default();
                         }
                     });
                 });
@@ -829,14 +942,39 @@ impl MenuPlannerView {
             }
         }
     }
-}
 
-pub fn draw_nova_badge(ui: &mut Ui, group: NovaGroup) {
-    let (r, g, b) = group.color_rgb();
-    ui.colored_label(Color32::from_rgb(r, g, b), format!("[{}]", group.short_name_ca()));
-}
+    fn export_daily_log(&mut self, state: &AppState) {
+        let log = match state.daily_journal.iter().find(|l| l.date == self.selected_date) {
+            Some(l) => l,
+            None => return,
+        };
 
-pub fn draw_glycemic_badge(ui: &mut Ui, level: GlycemicLevel, ig: u8) {
-    let (r, g, b) = level.color_rgb();
-    ui.colored_label(Color32::from_rgb(r, g, b), format!("[IG {}]", ig));
+        let file_name = format!("registre_diari_{}.html", self.selected_date);
+        let html = generate_daily_journal_report_html(state, log);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if let Some(path) = rfd::FileDialog::new()
+                .add_filter("Document HTML (PDF)", &["html"])
+                .set_file_name(&file_name)
+                .set_title(format!("Guardar Registre Diari de {}", self.selected_date))
+                .save_file()
+            {
+                if std::fs::write(&path, &html).is_ok() {
+                    self.export_message = Some(format!("💾 Fitxer desat amb èxit a: {}", path.display()));
+                } else {
+                    self.export_message = Some("❌ Error en escriure el fitxer en disc".into());
+                }
+            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Err(e) = crate::web_utils::web::download_file(&file_name, "text/html", html.as_bytes()) {
+                self.export_message = Some(format!("❌ Error en descarregar HTML: {:?}", e));
+            } else {
+                self.export_message = Some(format!("💾 S'ha descarregat {}!", file_name));
+            }
+        }
+    }
 }

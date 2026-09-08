@@ -1,6 +1,6 @@
 [package]
 name = "NutritionalPlanner"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 authors = ["Jordi Marias-i-Parella"]
 license = "MIT"
@@ -17,6 +17,7 @@ log = "0.4"
 env_logger = "0.11"
 rfd = "0.15"
 web-time = "1.1"
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock", "wasmbind"] }
 
 # Web dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]

@@ -1,13 +1,8 @@
 use crate::storage::AppState;
 use crate::models::*;
 
-pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> String {
+pub fn generate_daily_report_html(state: &AppState, day: &DailyMenu, main_title: &str, subtitle: &str) -> String {
     let mut html = String::new();
-
-    let day = match state.weekly_menu.days.get(day_idx) {
-        Some(d) => d,
-        None => return "Error: Dia no trobat".to_string(),
-    };
 
     let day_nut = day.calculate_total_nutrition(&state.ingredients, &state.dishes);
     let total_cg = day.calculate_total_glycemic_load(&state.ingredients, &state.dishes);
@@ -17,7 +12,9 @@ pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> Stri
 <html lang="ca">
 <head>
 <meta charset="UTF-8">
-<title>Menú Diari - Nutrició App</title>
+<title>"#);
+    html.push_str(main_title);
+    html.push_str(r#" - Nutrició App</title>
 <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1a1a1a; background-color: #fff; line-height: 1.5; }
     h1 { color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 6px; margin-bottom: 5px; }
@@ -54,13 +51,11 @@ pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> Stri
         <button onclick="window.print()" style="padding: 10px 22px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">🖨️ Imprimir / Desar com a PDF</button>
     </div>
 
-    <h1>🍏 Informe de Menú Diari: "#);
-    html.push_str(&day.day_name);
-    html.push_str(r#"</h1>
-    <p style="color: #666; font-size: 13px; margin-top: 0;">Planificació Nutricional i Classificació NOVA</p>
-
-    <h2>🍽️ Àpats del Dia</h2>
-"#);
+    <h1>🍏 "#);
+    html.push_str(main_title);
+    html.push_str("</h1>\n<p style=\"color: #666; font-size: 13px; margin-top: 0;\">");
+    html.push_str(subtitle);
+    html.push_str("</p>\n\n<h2>🍽️ Àpats del Dia</h2>\n");
 
     for meal_type in MealType::all() {
         let meal_icon = match meal_type {
@@ -302,6 +297,28 @@ pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> Stri
 "#);
 
     html
+}
+
+pub fn generate_daily_menu_report_html(state: &AppState, day_idx: usize) -> String {
+    let day = match state.weekly_menu.days.get(day_idx) {
+        Some(d) => d,
+        None => return "Error: Dia no trobat".to_string(),
+    };
+    generate_daily_report_html(
+        state,
+        day,
+        &format!("Informe de Menú Diari: {}", day.day_name),
+        "Planificació Nutricional i Classificació NOVA",
+    )
+}
+
+pub fn generate_daily_journal_report_html(state: &AppState, log: &DailyLog) -> String {
+    generate_daily_report_html(
+        state,
+        &log.daily_menu,
+        &format!("Registre Diari d'Àpats: {} ({})", log.date, log.daily_menu.day_name),
+        "Seguiment Nutricional Diari i Classificació NOVA",
+    )
 }
 
 pub fn generate_shopping_list_report_html(state: &AppState) -> String {
