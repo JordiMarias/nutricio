@@ -295,6 +295,95 @@ mod tests {
         assert_eq!(loaded.daily_journal[0].date, "2026-09-08");
         assert_eq!(loaded.daily_journal[0].daily_menu.meals.get(&MealType::Breakfast).unwrap().len(), 1);
     }
+
+    #[test]
+    fn test_merge_database_from_json() {
+        let mut state = nutricio::storage::AppState::empty();
+
+        let json_data = r#"{
+            "ingredients": [
+                {
+                    "id": "bonpreu_1",
+                    "name": "BONPREU Farina integral de blat",
+                    "brand": "BONPREU",
+                    "source_url": null,
+                    "unit_type": "Per100g",
+                    "per_unit_nutrition": {
+                        "kcal": 326.0,
+                        "fat_g": 2.2,
+                        "saturated_fat_g": 0.7,
+                        "carbs_g": 60.0,
+                        "sugars_g": 2.0,
+                        "fiber_g": 11.0,
+                        "protein_g": 11.0,
+                        "salt_g": 0.0,
+                        "price_euro": 0.089
+                    },
+                    "price_per_pack": 0.89,
+                    "pack_weight_g": 1000.0,
+                    "nova_group": "Group1Unprocessed",
+                    "glycemic_index": 35,
+                    "ingredients_text": "Farina integral"
+                }
+            ],
+            "dishes": [
+                {
+                    "id": "dish_1",
+                    "name": "Pizza Integral",
+                    "description": null,
+                    "items": [
+                        { "ingredient_id": "bonpreu_1", "quantity": 100.0 }
+                    ],
+                    "servings": 1.0
+                }
+            ]
+        }"#;
+
+        let res = state.merge_database_from_json(json_data);
+        assert!(res.is_ok());
+        let (n_ing, n_dish) = res.unwrap();
+        assert_eq!(n_ing, 1);
+        assert_eq!(n_dish, 1);
+        assert_eq!(state.ingredients.len(), 1);
+        assert_eq!(state.ingredients[0].name, "BONPREU Farina integral de blat");
+        assert_eq!(state.dishes.len(), 1);
+
+        // Test updating an existing ingredient
+        let updated_json = r#"{
+            "aliments": [
+                {
+                    "id": "bonpreu_1",
+                    "name": "BONPREU Farina integral de blat",
+                    "brand": "BONPREU",
+                    "source_url": null,
+                    "unit_type": "Per100g",
+                    "per_unit_nutrition": {
+                        "kcal": 330.0,
+                        "fat_g": 2.5,
+                        "saturated_fat_g": 0.7,
+                        "carbs_g": 60.0,
+                        "sugars_g": 2.0,
+                        "fiber_g": 11.0,
+                        "protein_g": 12.0,
+                        "salt_g": 0.0,
+                        "price_euro": 0.095
+                    },
+                    "price_per_pack": 0.95,
+                    "pack_weight_g": 1000.0,
+                    "nova_group": "Group1Unprocessed",
+                    "glycemic_index": 35,
+                    "ingredients_text": "Farina integral 100%"
+                }
+            ]
+        }"#;
+
+        let res2 = state.merge_database_from_json(updated_json);
+        assert!(res2.is_ok());
+        assert_eq!(state.ingredients.len(), 1); // Still 1 ingredient, updated
+        assert_eq!(state.ingredients[0].per_unit_nutrition.kcal, 330.0);
+        assert_eq!(state.ingredients[0].price_per_pack, Some(0.95));
+    }
 }
+
 
 

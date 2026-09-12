@@ -56,30 +56,32 @@ pub fn detect_nova_group(food_name: &str, ingredients_text: Option<&str>) -> Nov
         "aroma", "aromes", "conservant", "emulgent", "estabilitzant", "colorant",
         "edulcorant", "jarop", "sirop", "maltodextrina", "hidrogenat", "palma",
         "dextrosa", "proteïna de soja", "extracte de llevant", "glutamat",
-        "sorbat", "benzoat", "nitrit", "nitrat", "antioxidant e-", "espesseïdor"
+        "sorbat", "benzoat", "nitrit", "nitrat", "antioxidant e-", "espesseïdor",
+        "midó modificat", "mido modificat", "modificat", "goma garrofí", "goma garrofi",
+        "goma xantana", "burger meat"
     ];
 
     if ultra_keywords.iter().any(|&k| ing_text.contains(k) || name_lower.contains(k)) {
         return NovaGroup::Group4UltraProcessed;
     }
 
-    // Check for E-numbers in ingredients text
+    // Check for E-numbers in ingredients text or name
     let re_e_num = regex::Regex::new(r"(?i)\be-?\d{3,4}\b").unwrap();
     if re_e_num.is_match(&ing_text) || re_e_num.is_match(&name_lower) {
         return NovaGroup::Group4UltraProcessed;
     }
 
-    // 2. Check for Processed Ingredients (Group 2)
+    // 2. Check for Processed Culinary Ingredients (Group 2)
     let group2_keywords = [
-        "oli d'oliva", "oli de girassol", "sal", "sucre", "mantega", "vinagre", "farina de blat"
+        "oli d'oliva", "oli de", "oli verge", "sal marina", "sal ", "sucre", "mantega", "vinagre"
     ];
-    if group2_keywords.iter().any(|&k| name_lower == k || (ing_text == k && !ing_text.is_empty())) {
+    if group2_keywords.iter().any(|&k| name_lower.contains(k) || ing_text.contains(k)) {
         return NovaGroup::Group2ProcessedIngredient;
     }
 
     // 3. Check for Processed Foods (Group 3)
     let group3_keywords = [
-        "conserva", "formatge", "pa ", "pernil", "tonyina en oli", "sardines en oli", "embotit"
+        "conserva", "formatge", "mozarella", "mozzarella", "pa ", "pernil", "tonyina en oli", "sardines en oli", "embotit", "cervesa"
     ];
     if group3_keywords.iter().any(|&k| name_lower.contains(k) || ing_text.contains(k)) {
         return NovaGroup::Group3Processed;

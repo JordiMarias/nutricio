@@ -252,11 +252,9 @@ impl eframe::App for NutricioApp {
                                 self.show_notification("✨ Iniciat de zero");
                                 ui.close_menu();
                             }
-                            if ui.button("🌱 Carregar Dades d'Exemple").clicked() {
-                                self.state = AppState::with_seed_data();
-                                #[cfg(target_arch = "wasm32")]
-                                self.sync_local_storage();
-                                self.show_notification("🌱 Dades d'exemple carregades");
+                            if ui.button("🌐 Sincronitzar / Importar Base d'Aliments (JSON / URL)...").clicked() {
+                                self.active_tab = ActiveTab::Ingredients;
+                                self.ingredients_view.show_db_sync_modal = true;
                                 ui.close_menu();
                             }
                             ui.separator();
@@ -304,11 +302,9 @@ impl eframe::App for NutricioApp {
                             self.show_notification("✨ Iniciat de zero");
                             ui.close_menu();
                         }
-                        if ui.button("🌱 Carregar Dades d'Exemple").clicked() {
-                            self.state = AppState::with_seed_data();
-                            #[cfg(target_arch = "wasm32")]
-                            self.sync_local_storage();
-                            self.show_notification("🌱 Dades d'exemple carregades");
+                        if ui.button("🌐 Sincronitzar / Importar Base d'Aliments (JSON / URL)...").clicked() {
+                            self.active_tab = ActiveTab::Ingredients;
+                            self.ingredients_view.show_db_sync_modal = true;
                             ui.close_menu();
                         }
                         ui.separator();
@@ -323,7 +319,7 @@ impl eframe::App for NutricioApp {
                     });
 
                     ui.separator();
-                    ui.heading("🍏 Nutrició & Despesa Alimentària");
+                    ui.heading("Aplicació de control nutricional");
                     ui.add_space(20.0);
 
                     if ui.selectable_label(self.active_tab == ActiveTab::DailyJournal, "📝 Seguiment Diari").clicked() {

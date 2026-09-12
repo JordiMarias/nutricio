@@ -1,4 +1,5 @@
 use egui::{Color32, Ui};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use crate::models::*;
 #[allow(unused_imports)]
 use crate::scraper::parse_bonpreu_html;
@@ -12,6 +13,7 @@ pub struct IngredientsView {
     pub show_add_manual_modal: bool,
     pub show_bonpreu_modal: bool,
     pub show_edit_modal: bool,
+    pub show_db_sync_modal: bool,
     pub editing_ingredient_id: Option<String>,
     
     // Bonpreu Scraping Form
@@ -20,6 +22,14 @@ pub struct IngredientsView {
     pub bonpreu_html_paste: String,
     pub scraping_error: Option<String>,
     pub scraping_success: Option<String>,
+
+    // Database Sync / Import / Export (URL or JSON)
+    pub db_sync_url: String,
+    pub db_json_paste: String,
+    pub db_sync_status: Option<String>,
+    pub is_syncing: bool,
+    pub pending_db_tx: Sender<Result<String, String>>,
+    pub pending_db_rx: Receiver<Result<String, String>>,
 
     // Ingredient Form fields (used for both Add and Edit)
     pub form_name: String,
@@ -42,18 +52,27 @@ pub struct IngredientsView {
 
 impl Default for IngredientsView {
     fn default() -> Self {
+        let (tx, rx) = channel();
         Self {
             search_query: String::new(),
             selected_nova_filter: None,
             show_add_manual_modal: false,
             show_bonpreu_modal: false,
             show_edit_modal: false,
+            show_db_sync_modal: false,
             editing_ingredient_id: None,
 
             bonpreu_url: "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-arr%C3%B2s-basmati-integral-ecol%C3%B2gic/85330".to_string(),
             bonpreu_html_paste: String::new(),
             scraping_error: None,
             scraping_success: None,
+
+            db_sync_url: "https://raw.githubusercontent.com/JordiMarias/nutricio/main/base_database.json".to_string(),
+            db_json_paste: String::new(),
+            db_sync_status: None,
+            is_syncing: false,
+            pending_db_tx: tx,
+            pending_db_rx: rx,
 
             form_name: String::new(),
             form_brand: String::new(),
@@ -117,13 +136,31 @@ impl IngredientsView {
 
 
     pub fn ui(&mut self, ui: &mut Ui, state: &mut AppState) {
+        // Process any async loaded database text (e.g. from online fetch or file picker)
+        while let Ok(res) = self.pending_db_rx.try_recv() {
+            self.is_syncing = false;
+            match res {
+                Ok(text) => match state.merge_database_from_json(&text) {
+                    Ok((n_ing, n_dish)) => {
+                        self.db_sync_status = Some(format!("✅ S'han actualitzat / afegit correctament {} aliments i {} plats!", n_ing, n_dish));
+                    }
+                    Err(e) => {
+                        self.db_sync_status = Some(format!("❌ {}", e));
+                    }
+                },
+                Err(e) => {
+                    self.db_sync_status = Some(format!("❌ {}", e));
+                }
+            }
+        }
+
         ui.heading("🥦 Catàleg d'Aliments");
         ui.add_space(8.0);
 
         let is_mobile = ui.ctx().screen_rect().width() < 750.0 || ui.available_width() < 750.0;
 
         if is_mobile {
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 if ui.button("➕ Afegir Aliment").clicked() {
                     self.reset_form();
                     self.show_add_manual_modal = true;
@@ -132,6 +169,10 @@ impl IngredientsView {
                     self.show_bonpreu_modal = true;
                     self.scraping_error = None;
                     self.scraping_success = None;
+                }
+                if ui.button("🌐 Sincronitzar Base de Dades (JSON / URL)").clicked() {
+                    self.show_db_sync_modal = true;
+                    self.db_sync_status = None;
                 }
             });
 
@@ -177,6 +218,10 @@ impl IngredientsView {
                 }
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("🌐 Sincronitzar Base de Dades (JSON / URL)").clicked() {
+                        self.show_db_sync_modal = true;
+                        self.db_sync_status = None;
+                    }
                     if ui.button("🛒 Importar de Bonpreu").clicked() {
                         self.show_bonpreu_modal = true;
                         self.scraping_error = None;
@@ -581,6 +626,175 @@ impl IngredientsView {
             if close_modal {
                 self.show_edit_modal = false;
                 self.editing_ingredient_id = None;
+            }
+        }
+
+        // MODAL 4: Database Sync / Import / Export (URL or JSON)
+        if self.show_db_sync_modal {
+            let mut close_modal = false;
+            egui::Window::new("🌐 Sincronització de Base de Dades (Aliments i Plats)")
+                .collapsible(false)
+                .resizable(true)
+                .pivot(egui::Align2::CENTER_CENTER)
+                .fixed_pos(screen_rect.center())
+                .max_width(modal_width)
+                .max_height(modal_height)
+                .show(ui.ctx(), |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.heading("🌐 1. Sincronització Online des d'Internet (URL)");
+                        ui.label("Pots posar l'enllaç d'un fitxer JSON obert a internet (ex: GitHub raw) per actualitzar o afegir aliments i plats automàticament sense perdre els teus menús diaris:");
+                        
+                        ui.horizontal_wrapped(|ui| {
+                            ui.label("Enllaç URL:");
+                            ui.text_edit_singleline(&mut self.db_sync_url);
+                        });
+
+                        ui.add_space(4.0);
+                        if self.is_syncing {
+                            ui.horizontal(|ui| {
+                                ui.spinner();
+                                ui.label("Descarregant i processant dades online...");
+                            });
+                        } else {
+                            if ui.button("⚡ Descarregar i Actualitzar des d'aquesta URL").clicked() {
+                                self.is_syncing = true;
+                                self.db_sync_status = None;
+                                let tx = self.pending_db_tx.clone();
+                                let url = self.db_sync_url.trim().to_string();
+
+                                #[cfg(target_arch = "wasm32")]
+                                {
+                                    wasm_bindgen_futures::spawn_local(async move {
+                                        match reqwest::get(&url).await {
+                                            Ok(resp) => match resp.text().await {
+                                                Ok(text) => { let _ = tx.send(Ok(text)); }
+                                                Err(e) => { let _ = tx.send(Err(format!("Error en llegir la resposta HTTP: {}", e))); }
+                                            },
+                                            Err(e) => {
+                                                let _ = tx.send(Err(format!("Error en connectar a la URL: {}", e)));
+                                            }
+                                        }
+                                    });
+                                }
+
+                                #[cfg(not(target_arch = "wasm32"))]
+                                {
+                                    std::thread::spawn(move || {
+                                        match reqwest::blocking::get(&url) {
+                                            Ok(resp) => match resp.text() {
+                                                Ok(text) => { let _ = tx.send(Ok(text)); }
+                                                Err(e) => { let _ = tx.send(Err(format!("Error en llegir la resposta HTTP: {}", e))); }
+                                            },
+                                            Err(e) => {
+                                                let _ = tx.send(Err(format!("Error en connectar a la URL: {}", e)));
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+
+                        ui.separator();
+                        ui.heading("📂 2. Carregar des de Fitxer JSON Local");
+                        ui.label("Tria un fitxer .json del teu ordinador o mòbil amb aliments/plats:");
+
+                        if ui.button("📂 Obrir Fitxer JSON Local...").clicked() {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            {
+                                if let Some(path) = rfd::FileDialog::new()
+                                    .add_filter("JSON", &["json"])
+                                    .set_title("Obrir Base d'Aliments JSON")
+                                    .pick_file()
+                                {
+                                    if let Ok(content) = std::fs::read_to_string(&path) {
+                                        let _ = self.pending_db_tx.send(Ok(content));
+                                    }
+                                }
+                            }
+
+                            #[cfg(target_arch = "wasm32")]
+                            {
+                                let tx = self.pending_db_tx.clone();
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    let file = rfd::AsyncFileDialog::new()
+                                        .add_filter("JSON", &["json"])
+                                        .set_title("Obrir Base d'Aliments JSON")
+                                        .pick_file()
+                                        .await;
+                                    if let Some(handle) = file {
+                                        let bytes = handle.read().await;
+                                        if let Ok(text) = String::from_utf8(bytes) {
+                                            let _ = tx.send(Ok(text));
+                                        }
+                                    }
+                                });
+                            }
+                        }
+
+                        ui.separator();
+                        ui.heading("📋 3. Enganxar Codi JSON Manualment");
+                        ui.label("Pots enganxar directament el text JSON aquí:");
+                        ui.code_editor(&mut self.db_json_paste);
+
+                        if ui.button("📥 Fusionar JSON Enganxat").clicked() {
+                            if !self.db_json_paste.trim().is_empty() {
+                                let _ = self.pending_db_tx.send(Ok(self.db_json_paste.trim().to_string()));
+                            }
+                        }
+
+                        ui.separator();
+                        ui.heading("💾 4. Exportar Base d'Aliments i Plats Actuals");
+                        ui.label("Exporta el teu catàleg d'aliments i plats actual per compartir-lo o penjar-lo a GitHub:");
+
+                        if ui.button("💾 Descarregar/Guardar base_database.json").clicked() {
+                            let export_obj = serde_json::json!({
+                                "ingredients": &state.ingredients,
+                                "dishes": &state.dishes
+                            });
+                            if let Ok(json_text) = serde_json::to_string_pretty(&export_obj) {
+                                #[cfg(not(target_arch = "wasm32"))]
+                                {
+                                    if let Some(path) = rfd::FileDialog::new()
+                                        .add_filter("JSON", &["json"])
+                                        .set_file_name("base_database.json")
+                                        .set_title("Guardar Base d'Aliments")
+                                        .save_file()
+                                    {
+                                        let _ = std::fs::write(&path, json_text);
+                                        self.db_sync_status = Some(format!("💾 Fitxer desat a: {}", path.display()));
+                                    }
+                                }
+
+                                #[cfg(target_arch = "wasm32")]
+                                {
+                                    let _ = crate::web_utils::web::download_file(
+                                        "base_database.json",
+                                        "application/json",
+                                        json_text.as_bytes()
+                                    );
+                                    self.db_sync_status = Some("💾 S'ha iniciat la descàrrega de base_database.json!".into());
+                                }
+                            }
+                        }
+
+                        if let Some(status) = &self.db_sync_status {
+                            ui.separator();
+                            if status.starts_with("✅") || status.starts_with("💾") {
+                                ui.colored_label(Color32::GREEN, status);
+                            } else {
+                                ui.colored_label(Color32::RED, status);
+                            }
+                        }
+
+                        ui.separator();
+                        if ui.button("Tancar").clicked() {
+                            close_modal = true;
+                        }
+                    });
+                });
+
+            if close_modal {
+                self.show_db_sync_modal = false;
             }
         }
     }

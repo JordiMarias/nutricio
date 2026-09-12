@@ -47,12 +47,20 @@ impl GlycemicLevel {
 
 pub fn estimate_glycemic_index(name: &str, carbs_100g: f64, ingredients_text: Option<&str>) -> u8 {
     // 1. If negligible carbs, IG is 0
-    if carbs_100g < 1.0 {
+    if carbs_100g < 0.5 {
         return 0;
     }
 
     let name_lower = name.to_lowercase();
     let ing_lower = ingredients_text.unwrap_or("").to_lowercase();
+
+    // Specific high-impact products
+    if name_lower.contains("beguda d'arròs") || name_lower.contains("beguda d'arros") || name_lower.contains("beguda arros") {
+        return 85;
+    }
+    if name_lower.contains("cervesa") || ing_lower.contains("malt d'ordi") {
+        return 70;
+    }
 
     // 2. High GI foods (>= 70)
     let high_keywords = [
@@ -64,25 +72,44 @@ pub fn estimate_glycemic_index(name: &str, carbs_100g: f64, ingredients_text: Op
         return 75;
     }
 
-    // 3. Low GI foods (<= 55)
+    // 3. Very low GI non-starchy vegetables (<= 15)
+    let very_low_keywords = [
+        "bròcoli", "brocoli", "amanida", "enciam", "espinac", "escarola", "carbassó", "carbasso", "pebrot"
+    ];
+    if very_low_keywords.iter().any(|&k| name_lower.contains(k) || ing_lower.contains(k)) {
+        return 15;
+    }
+
+    // 4. Low GI foods (<= 55)
     let low_keywords = [
         "llenti", "cigr", "monget", "soja", "pèso", "peso", "llegum",
         "poma", "pera", "taronja", "kiwi", "fresa", "maduixa", "alvocat",
         "llet", "iogurt", "frut", "nous", "ametll", "avellan",
-        "civada", "integral"
+        "civada", "integral", "sègol", "segol", "fajol", "quinoa", "plàtan", "platan", "tomàquet", "tomaquet"
     ];
     if low_keywords.iter().any(|&k| name_lower.contains(k) || ing_lower.contains(k)) {
+        if name_lower.contains("kiwi") || name_lower.contains("plàtan") || name_lower.contains("platan") {
+            return 52;
+        }
+        if name_lower.contains("quinoa") {
+            return 53;
+        }
+        if name_lower.contains("fajol") {
+            return 50;
+        }
+        if name_lower.contains("basmati") {
+            return 45;
+        }
         return 35;
     }
 
-    // 4. Medium GI foods (56..69)
+    // 5. Medium GI foods (56..69)
     let medium_keywords = [
-        "basmati", "quinoa", "plàtan", "platan", "raïm", "raim", "cuscús", "cuscus"
+        "raïm", "raim", "cuscús", "cuscus"
     ];
     if medium_keywords.iter().any(|&k| name_lower.contains(k) || ing_lower.contains(k)) {
-        return 55;
+        return 58;
     }
-
 
     // Default estimate based on sugar ratio
     if carbs_100g > 0.0 {

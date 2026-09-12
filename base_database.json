@@ -1,0 +1,590 @@
+{
+    "ingredients": [
+        {
+            "id": "bonpreu_1",
+            "name": "BONPREU Farina integral de blat",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-farina-integral-de-blat/06634",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 326.0,
+                "fat_g": 2.2,
+                "saturated_fat_g": 0.7,
+                "carbs_g": 60.0,
+                "sugars_g": 2.0,
+                "fiber_g": 11.0,
+                "protein_g": 11.0,
+                "salt_g": 0.0,
+                "price_euro": 0.089
+            },
+            "price_per_pack": 0.89,
+            "pack_weight_g": 1000.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 40,
+            "ingredients_text": "Farina integral de blat."
+        },
+        {
+            "id": "bonpreu_2",
+            "name": "BONPREU Farina integral de sègol ecològica",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-farina-integral-de-s%C3%A8gol-ecol%C3%B2gica/55588",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 302.0,
+                "fat_g": 2.4,
+                "saturated_fat_g": 0.4,
+                "carbs_g": 49.0,
+                "sugars_g": 1.8,
+                "fiber_g": 22.0,
+                "protein_g": 10.0,
+                "salt_g": 0.04,
+                "price_euro": 0.276
+            },
+            "price_per_pack": 1.38,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 35,
+            "ingredients_text": "Farina integral de sègol*."
+        },
+        {
+            "id": "bonpreu_3",
+            "name": "BONPREU Oli d'oliva verge extra",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-oli-d-oliva-verge-extra/05290",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 900.0,
+                "fat_g": 100.0,
+                "saturated_fat_g": 16.0,
+                "carbs_g": 0.0,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 0.0,
+                "salt_g": 0.0,
+                "price_euro": 0.47
+            },
+            "price_per_pack": 4.7,
+            "pack_weight_g": 1000.0,
+            "nova_group": "Group2ProcessedIngredient",
+            "glycemic_index": 0,
+            "ingredients_text": "oli d'oliva verge extra."
+        },
+        {
+            "id": "bonpreu_4",
+            "name": "ROYAL Llevat per elaborar pa",
+            "brand": "ROYAL",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/royal-llevat-per-elaborar-pa/19531",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 425.0,
+                "fat_g": 6.0,
+                "saturated_fat_g": 5.4,
+                "carbs_g": 40.0,
+                "sugars_g": 0.1,
+                "fiber_g": 15.0,
+                "protein_g": 45.0,
+                "salt_g": 0.13,
+                "price_euro": 8.518518518518519
+            },
+            "price_per_pack": 2.3,
+            "pack_weight_g": 27.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 35,
+            "ingredients_text": "llevat deshidratat (Saccharomyces cerevisiae), emulgent (E491)."
+        },
+        {
+            "id": "bonpreu_5",
+            "name": "BONPREU Salsa de tomàquet amb alfàbrega i orenga",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-salsa-de-tom%C3%A0quet-amb-alf%C3%A0brega-i-orenga/87703",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 73.0,
+                "fat_g": 4.1,
+                "saturated_fat_g": 0.6,
+                "carbs_g": 7.3,
+                "sugars_g": 5.4,
+                "fiber_g": 0.6,
+                "protein_g": 1.4,
+                "salt_g": 1.1,
+                "price_euro": 0.48333333333333334
+            },
+            "price_per_pack": 1.45,
+            "pack_weight_g": 300.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 30,
+            "ingredients_text": "puré de tomàquet (91 %), oli d'oliva, sucre, alfàbrega (1 %), midó modificat de blat de moro, sal, orenga (0,1 %), all i acidulant (àcid cítric)."
+        },
+        {
+            "id": "ing_6",
+            "name": "Mozarella",
+            "brand": null,
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 293.0,
+                "fat_g": 21.0,
+                "saturated_fat_g": 14.0,
+                "carbs_g": 0.0,
+                "sugars_g": 0.0,
+                "fiber_g": 2.0,
+                "protein_g": 25.0,
+                "salt_g": 1.0,
+                "price_euro": 0.0
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 0,
+            "ingredients_text": null
+        },
+        {
+            "id": "ing_7",
+            "name": "Kiwi verd",
+            "brand": null,
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 61.0,
+                "fat_g": 0.4,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 10.0,
+                "sugars_g": 7.0,
+                "fiber_g": 2.5,
+                "protein_g": 1.0,
+                "salt_g": 0.0,
+                "price_euro": 0.698
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 52,
+            "ingredients_text": null
+        },
+        {
+            "id": "bonpreu_8",
+            "name": "BONPREU Beguda d'arròs 0% sucres en cartró",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-beguda-d-arr%C3%B2s-0-sucres-en-cartr%C3%B3/49445",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 37.0,
+                "fat_g": 0.8,
+                "saturated_fat_g": 0.1,
+                "carbs_g": 7.0,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 0.3,
+                "salt_g": 0.1,
+                "price_euro": 0.105
+            },
+            "price_per_pack": 1.05,
+            "pack_weight_g": 1000.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 85,
+            "ingredients_text": "Aigua, arròs (13 %), oli de gira-sol alt oleic, estabilitzant (goma garrofí), sal marina, vitamina B12(cianocobalamina) i vitamina D (ergocalficerol)."
+        },
+        {
+            "id": "bonpreu_9",
+            "name": "LA COLLITA Bròcoli per cuinar al vapor",
+            "brand": "LA COLLITA",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/la-collita-br%C3%B2coli-per-cuinar-al-vapor/88588",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 24.0,
+                "fat_g": 0.5,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 2.1,
+                "sugars_g": 2.1,
+                "fiber_g": 2.9,
+                "protein_g": 1.3,
+                "salt_g": 0.05,
+                "price_euro": 0.7347826086956522
+            },
+            "price_per_pack": 1.69,
+            "pack_weight_g": 230.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 15,
+            "ingredients_text": "Bròcoli."
+        },
+        {
+            "id": "bonpreu_10",
+            "name": "BONPREU Filet d'indiot",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-filet-d-indiot/65569",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 107.0,
+                "fat_g": 1.7,
+                "saturated_fat_g": 0.6,
+                "carbs_g": 0.0,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 23.0,
+                "salt_g": 0.19,
+                "price_euro": 1.3833333333333335
+            },
+            "price_per_pack": 4.15,
+            "pack_weight_g": 300.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 0,
+            "ingredients_text": "filet d'indiot."
+        },
+        {
+            "id": "bonpreu_11",
+            "name": "AMBAR Cervesa torrada probiòtica 0,0% sense alcohol en llauna",
+            "brand": "AMBAR",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/ambar-cervesa-torrada-probi%C3%B2tica-0-0-sense-alcohol-en-llauna/58549",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 19.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 3.8,
+                "sugars_g": 0.0,
+                "fiber_g": 1.7,
+                "protein_g": 0.0,
+                "salt_g": 0.0,
+                "price_euro": 0.2939393939393939
+            },
+            "price_per_pack": 0.97,
+            "pack_weight_g": 330.0,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 70,
+            "ingredients_text": "aigua, malt d'ordi, blat de moro, ordi, llúpol, llevat."
+        },
+        {
+            "id": "bonpreu_12",
+            "name": "BONPREU Espaguetis integrals ecològics Km0",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-espaguetis-integrals-ecol%C3%B2gics-km0/36574",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 350.0,
+                "fat_g": 2.0,
+                "saturated_fat_g": 0.4,
+                "carbs_g": 67.0,
+                "sugars_g": 3.0,
+                "fiber_g": 0.0,
+                "protein_g": 12.0,
+                "salt_g": 0.02,
+                "price_euro": 0.258
+            },
+            "price_per_pack": 1.29,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 35,
+            "ingredients_text": "sèmola integral de blat dur*."
+        },
+        {
+            "id": "bonpreu_13",
+            "name": "ECOBASICS Cigrons pedrosillano ecològics",
+            "brand": "ECOBASICS",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/ecobasics-cigrons-pedrosillano-ecol%C3%B2gics/28741",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 402.0,
+                "fat_g": 6.5,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 58.0,
+                "sugars_g": 8.8,
+                "fiber_g": 20.0,
+                "protein_g": 22.0,
+                "salt_g": 0.05,
+                "price_euro": 0.498
+            },
+            "price_per_pack": 2.49,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 35,
+            "ingredients_text": "Cigró de cultiu ecològic."
+        },
+        {
+            "id": "bonpreu_14",
+            "name": "BONPREU Pit de pollastre filetejat",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-pit-de-pollastre-filetejat/02218",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 111.0,
+                "fat_g": 2.6,
+                "saturated_fat_g": 0.6,
+                "carbs_g": 0.0,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 22.0,
+                "salt_g": 0.1,
+                "price_euro": 0.9214285714285716
+            },
+            "price_per_pack": 6.45,
+            "pack_weight_g": 700.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 0,
+            "ingredients_text": "pit de pollastre."
+        },
+        {
+            "id": "bonpreu_15",
+            "name": "BONPREU Arròs basmati integral ecològic",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-arr%C3%B2s-basmati-integral-ecol%C3%B2gic/85330",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 359.0,
+                "fat_g": 2.6,
+                "saturated_fat_g": 0.6,
+                "carbs_g": 74.0,
+                "sugars_g": 1.0,
+                "fiber_g": 0.0,
+                "protein_g": 8.3,
+                "salt_g": 0.0,
+                "price_euro": 0.43
+            },
+            "price_per_pack": 2.15,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 45,
+            "ingredients_text": "arròs basmati espellofat de gra llarg*."
+        },
+        {
+            "id": "ing_16",
+            "name": "BONPREU Burger meat de pollastre",
+            "brand": null,
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 167.0,
+                "fat_g": 8.6,
+                "saturated_fat_g": 2.4,
+                "carbs_g": 3.9,
+                "sugars_g": 0.3,
+                "fiber_g": 0.0,
+                "protein_g": 18.0,
+                "salt_g": 1.7,
+                "price_euro": 0.1163
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 0,
+            "ingredients_text": null
+        },
+        {
+            "id": "bonpreu_17",
+            "name": "LA COLLITA Amanida gourmet",
+            "brand": "LA COLLITA",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/la-collita-amanida-gourmet/12887",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 22.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 1.1,
+                "sugars_g": 0.7,
+                "fiber_g": 3.5,
+                "protein_g": 1.7,
+                "salt_g": 0.0,
+                "price_euro": 0.6228571428571429
+            },
+            "price_per_pack": 1.09,
+            "pack_weight_g": 175.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 5,
+            "ingredients_text": "hortalisses en proporció variable (escarola arrissada, xicoira vermella i canonges)."
+        },
+        {
+            "id": "bonpreu_18",
+            "name": "LA COLLITA Amanida variada",
+            "brand": "LA COLLITA",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/la-collita-amanida-variada/35638",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 21.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 0.8,
+                "sugars_g": 0.8,
+                "fiber_g": 3.9,
+                "protein_g": 1.7,
+                "salt_g": 0.0,
+                "price_euro": 0.545
+            },
+            "price_per_pack": 1.09,
+            "pack_weight_g": 200.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 5,
+            "ingredients_text": "hortalisses en proporció variable (escarola llisa, escarola arrissada i xicoira vermella)."
+        },
+        {
+            "id": "ing_19",
+            "name": "Plàtan",
+            "brand": null,
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 90.0,
+                "fat_g": 0.3,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 22.0,
+                "sugars_g": 20.0,
+                "fiber_g": 2.3,
+                "protein_g": 1.1,
+                "salt_g": 0.0,
+                "price_euro": 0.229
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 51,
+            "ingredients_text": null
+        },
+        {
+            "id": "bonpreu_21",
+            "name": "ECOBASICS Llenties pardina ecològiques",
+            "brand": "ECOBASICS",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/ecobasics-llenties-pardina-ecol%C3%B2giques/11263",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 366.0,
+                "fat_g": 2.5,
+                "saturated_fat_g": 0.9,
+                "carbs_g": 56.0,
+                "sugars_g": 4.3,
+                "fiber_g": 17.0,
+                "protein_g": 25.0,
+                "salt_g": 0.01,
+                "price_euro": 0.598
+            },
+            "price_per_pack": 2.99,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 35,
+            "ingredients_text": "Llentia pardina de cultiu ecològic."
+        },
+        {
+            "id": "bonpreu_20",
+            "name": "BONPREU Llenties vermelles ecològiques",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-llenties-vermelles-ecol%C3%B2giques/85329",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 385.0,
+                "fat_g": 2.1,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 60.0,
+                "sugars_g": 0.0,
+                "fiber_g": 11.0,
+                "protein_g": 26.0,
+                "salt_g": 0.0,
+                "price_euro": 0.578
+            },
+            "price_per_pack": 2.89,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 38,
+            "ingredients_text": "llenties vermelles* (origen: Turquia)."
+        },
+        {
+            "id": "bonpreu_22",
+            "name": "ECOBASICS Mongetes blanques ecològiques",
+            "brand": "ECOBASICS",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/ecobasics-mongetes-blanques-ecol%C3%B2giques/28815",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 400.0,
+                "fat_g": 1.4,
+                "saturated_fat_g": 0.25,
+                "carbs_g": 58.0,
+                "sugars_g": 3.4,
+                "fiber_g": 27.0,
+                "protein_g": 21.0,
+                "salt_g": 0.04,
+                "price_euro": 0.598
+            },
+            "price_per_pack": 2.99,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 35,
+            "ingredients_text": "Mongeta blanca de cultiu ecològic."
+        },
+        {
+            "id": "bonpreu_23",
+            "name": "BONPREU Fajol ecològic",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-fajol-ecol%C3%B2gic/34345",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 351.0,
+                "fat_g": 3.4,
+                "saturated_fat_g": 0.7,
+                "carbs_g": 62.0,
+                "sugars_g": 2.0,
+                "fiber_g": 10.0,
+                "protein_g": 13.0,
+                "salt_g": 0.0,
+                "price_euro": 0.398
+            },
+            "price_per_pack": 1.99,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 50,
+            "ingredients_text": "Grans de fajol*."
+        },
+        {
+            "id": "bonpreu_24",
+            "name": "BONPREU Quinoa ecològica",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-quinoa-ecol%C3%B2gica/42925",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 386.0,
+                "fat_g": 4.0,
+                "saturated_fat_g": 0.5,
+                "carbs_g": 70.0,
+                "sugars_g": 2.0,
+                "fiber_g": 9.0,
+                "protein_g": 13.0,
+                "salt_g": 0.04,
+                "price_euro": 0.73
+            },
+            "price_per_pack": 3.65,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group1Unprocessed",
+            "glycemic_index": 53,
+            "ingredients_text": "Grans de quinoa*."
+        }
+    ],
+    "dishes": [
+        {
+            "id": "dish_1",
+            "name": "Pizza Integral (26% farina segol)",
+            "description": null,
+            "items": [
+                {
+                    "ingredient_id": "bonpreu_1",
+                    "quantity": 110.0
+                },
+                {
+                    "ingredient_id": "bonpreu_2",
+                    "quantity": 40.0
+                },
+                {
+                    "ingredient_id": "bonpreu_3",
+                    "quantity": 25.0
+                },
+                {
+                    "ingredient_id": "bonpreu_4",
+                    "quantity": 5.5
+                },
+                {
+                    "ingredient_id": "bonpreu_5",
+                    "quantity": 100.0
+                },
+                {
+                    "ingredient_id": "ing_6",
+                    "quantity": 100.0
+                }
+            ],
+            "servings": 1.0
+        }
+    ]
+}
