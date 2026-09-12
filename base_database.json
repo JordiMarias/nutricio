@@ -553,7 +553,7 @@
             "ingredients_text": "Grans de quinoa*."
         },
         {
-            "id": "bonpreu_1",
+            "id": "bonpreu_25",
             "name": "BONPREU Beguda de civada 0% sucres en cartró",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-beguda-de-civada-0-sucres-en-cartr%C3%B3/49892",
@@ -576,7 +576,7 @@
             "ingredients_text": "Aigua, civada (14%), oli de gira-sol, sal marina."
         },
         {
-            "id": "bonpreu_2",
+            "id": "bonpreu_26",
             "name": "BONPREU Llet d'ametlles UHT 0% sucres",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-llet-d-ametlles-uht-0-sucres/65977",
@@ -599,7 +599,7 @@
             "ingredients_text": "Aigua, ametlla (4%), emulgent, estabilitzant, sal marina."
         },
         {
-            "id": "bonpreu_3",
+            "id": "bonpreu_27",
             "name": "BONPREU Beguda de soja UHT 0% sucres",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-beguda-de-soja-uht-0-sucres/67596",
@@ -622,7 +622,7 @@
             "ingredients_text": "Aigua, llavors de soja (13%), sals minerals, aromes."
         },
         {
-            "id": "bonpreu_4",
+            "id": "bonpreu_28",
             "name": "POPITAS Crispetes amb sal per a microones",
             "brand": "POPITAS",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/popitas-crispetes-amb-sal-per-a-microones/34849",
@@ -645,7 +645,7 @@
             "ingredients_text": "blat de moro, greix vegetal de palma i sal (2,5%)."
         },
         {
-            "id": "bonpreu_5",
+            "id": "bonpreu_29",
             "name": "LAY'S Patates fregides al punt de sal",
             "brand": "LAY'S",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/lay-s-patates-fregides-al-punt-de-sal/87863",
@@ -668,7 +668,7 @@
             "ingredients_text": "Patates, olis vegetals (gira-sol i colza en proporcions variables), sal (0,85%), antioxidants (extracte de romaní, àcid ascòrbic, extracte ric en tocoferols, àcid cítric)."
         },
         {
-            "id": "bonpreu_6",
+            "id": "bonpreu_30",
             "name": "DORITOS Snacks de blat de moro amb gust de formatge Tex-Mex",
             "brand": "DORITOS",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/doritos-snacks-de-blat-de-moro-amb-gust-de-formatge-tex-mex/29605",
@@ -691,7 +691,7 @@
             "ingredients_text": "blat de moro, oli de colza, aroma a formatge [sèrum de llet, aromes, sal, formatge en pols, potenciadors del sabor]."
         },
         {
-            "id": "ing_7",
+            "id": "bonpreu_31",
             "name": "ESTRELLA DAMM Cervesa especial en llauna",
             "brand": "ESTRELLA DAMM",
             "source_url": null,
@@ -714,7 +714,7 @@
             "ingredients_text": "Aigua, malt d'ordi, arròs, llúpol."
         },
         {
-            "id": "bonpreu_8",
+            "id": "bonpreu_32",
             "name": "FREE DAMM Cervesa sense alcohol en llauna",
             "brand": "FREE DAMM",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/free-damm-cervesa-sense-alcohol-en-llauna/20072",
@@ -737,7 +737,7 @@
             "ingredients_text": "aigua, malta d'ordi, blat de moro, llúpol, aromes."
         },
         {
-            "id": "ing_9",
+            "id": "bonpreu_33",
             "name": "VOLL DAMM Cervesa doble malta 33 cl llauna",
             "brand": "ESTRELLA DAMM",
             "source_url": null,
@@ -760,7 +760,7 @@
             "ingredients_text": "Aigua, malt d'ordi, arròs, llúpol."
         },
         {
-            "id": "bonpreu_1",
+            "id": "bonpreu_34",
             "name": "MORITZ EPIDOR Cervesa Torrada Extra en llauna",
             "brand": "MORITZ EPIDOR",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/moritz-epidor-cervesa-torrada-extra-en-llauna/12898",
@@ -783,7 +783,7 @@
             "ingredients_text": "aigua, malta d'ordi, arròs, llúpol."
         },
         {
-            "id": "bonpreu_2",
+            "id": "bonpreu_35",
             "name": "MORITZ Cervesa 100% malta",
             "brand": "MORITZ",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/moritz-cervesa-100-malta/36338",
@@ -806,7 +806,7 @@
             "ingredients_text": "aigua, 100% malta d'ordi, llúpol."
         },
         {
-            "id": "bonpreu_3",
+            "id": "bonpreu_36",
             "name": "SERPIS Olives farcides d'anxova",
             "brand": "SERPIS",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/serpis-olives-farcides-d-anxova/10484",
@@ -829,7 +829,7 @@
             "ingredients_text": "Oliva manzanilla verda, pasta d'anxova (6%), aigua, sal, acidulant (àcid cítric)."
         },
         {
-            "id": "bonpreu_4",
+            "id": "bonpreu_37",
             "name": "FRIT RAVICH Còctel sense closca",
             "brand": "FRIT RAVICH",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/frit-ravich-c%C3%B2ctel-sense-closca/85738",
@@ -852,7 +852,7 @@
             "ingredients_text": "Cacauets fregits i salats (cacauets, oli de gira-sol, sal), blat de moro fregit i salat, fruita seca."
         },
         {
-            "id": "bonpreu_5",
+            "id": "bonpreu_38",
             "name": "LAY'S Patates fregides Mediterrànies",
             "brand": "LAY'S",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/lay-s-patates-fregides-mediterr%C3%A0nies/02468",
@@ -875,7 +875,7 @@
             "ingredients_text": "Patates, oli d´oliva (14.3%*), oli de gira-sol (13.7%*), sal."
         },
         {
-            "id": "bonpreu_6",
+            "id": "bonpreu_39",
             "name": "BONPREU Pernil cuit",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-pernil-cuit/83518",
@@ -898,7 +898,7 @@
             "ingredients_text": "pernil de porc (85 %), aigua, sal, xarop de glucosa, conservadors (lactat potàssic, etil lauroïl arginat i nitrit sòdic), aromes, gelificants (carragenat i goma xantana), estabilitzants (trifosfats i difosfats), antioxidants (citrats de sodi i ascorbat sòdic) i extracte d'espècies."
         },
         {
-            "id": "bonpreu_7",
+            "id": "bonpreu_40",
             "name": "BONPREU Formatge ratllat mozzarella",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-formatge-ratllat-mozzarella/81420",
@@ -921,7 +921,7 @@
             "ingredients_text": "formatge mozzarella (llet de vaca pasteuritzada, ferments làctics, quall, sal), antiaglomerant (midó de patata)."
         },
         {
-            "id": "bonpreu_8",
+            "id": "bonpreu_41",
             "name": "BONPREU Tomàquet fregit ecològic",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-tom%C3%A0quet-fregit-ecol%C3%B2gic/60765",
@@ -944,7 +944,7 @@
             "ingredients_text": "tomàquet* (126 g de tomàquet natural per elaborar 100 g de tomàquet fregit), oli d'oliva verge extra* (4%), sucre* i sal."
         },
         {
-            "id": "bonpreu_9",
+            "id": "bonpreu_42",
             "name": "BONPREU Ous frescos ecològics classe L",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-ous-frescos-ecol%C3%B2gics-classe-l/31757",
@@ -967,7 +967,7 @@
             "ingredients_text": "Ous frescos ecològics de gallines criades a l'aire lliure."
         },
         {
-            "id": "bonpreu_10",
+            "id": "bonpreu_43",
             "name": "LA COLLITA Amanida de l'hort",
             "brand": "LA COLLITA",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/la-collita-amanida-de-l-hort/15807",
@@ -990,7 +990,7 @@
             "ingredients_text": "mescla d'hortalisses en proporció variable (50 %) [escarola llisa, escarola arrissada i xicoira], pastanaga (17 %), cirerols, olives verdes (9 %) (olives verdes varietat hojiblanca, aigua, sal i acidulant (àcid cítric)) i blat de moro dolç (blat de moro, aigua, sucre i sal)."
         },
         {
-            "id": "bonpreu_11",
+            "id": "bonpreu_44",
             "name": "MAGGI Fideus orientals Ramen",
             "brand": "MAGGI",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/maggi-fideus-orientals-ramen/08493",
@@ -1013,7 +1013,7 @@
             "ingredients_text": "fideus orientals (83,3%): farina de blat, oli de palma, sal, potenciadors del sabor (E621, E635), aromes, colorants."
         },
         {
-            "id": "bonpreu_12",
+            "id": "bonpreu_45",
             "name": "MAGGI Pasta oriental de pollastre",
             "brand": "MAGGI",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/maggi-pasta-oriental-de-pollastre/41201",
@@ -1036,7 +1036,7 @@
             "ingredients_text": "Fideus orientals (93,7%): Farina de blat, oli de palma, aromes, potenciadors del sabor, additius."
         },
         {
-            "id": "bonpreu_13",
+            "id": "bonpreu_46",
             "name": "MAGGI Pasta oriental de curry",
             "brand": "MAGGI",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/maggi-pasta-oriental-de-curry/30605",
@@ -1059,7 +1059,7 @@
             "ingredients_text": "Fideus orientals 93,7%, farina de blat, oli de palma, espècies de curri, aromes, potenciadors del sabor."
         },
         {
-            "id": "bonpreu_14",
+            "id": "bonpreu_47",
             "name": "MAGGI Fideus orientals Noodles Classic Fusian",
             "brand": "MAGGI",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/maggi-fideus-orientals-noodles-classic-fusian/80283",
@@ -1082,7 +1082,7 @@
             "ingredients_text": "fideus fregits (76,7%): farina de blat, oli de palma, aromes, extracte de llevat, additius."
         },
         {
-            "id": "bonpreu_15",
+            "id": "bonpreu_48",
             "name": "JUDAS Cervesa rossa belga en ampolla",
             "brand": "JUDAS",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/judas-cervesa-rossa-belga-en-ampolla/09324",
@@ -1105,7 +1105,7 @@
             "ingredients_text": "aigua, malt d'ordi, blat de moro, xarop de glucosa, llúpol."
         },
         {
-            "id": "bonpreu_16",
+            "id": "bonpreu_49",
             "name": "CHIMAY Cervesa trapense en ampolla",
             "brand": "CHIMAY",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/chimay-cervesa-trapense-en-ampolla/82077",
@@ -1128,7 +1128,7 @@
             "ingredients_text": "Aigua, malta d'ordi, sucre, blat, llúpol, llevat."
         },
         {
-            "id": "bonpreu_17",
+            "id": "bonpreu_50",
             "name": "ST. BERNARDUS Cervesa tripel en ampolla",
             "brand": "ST. BERNARDUS",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/st-bernardus-cervesa-tripel-en-ampolla/17168",
@@ -1151,7 +1151,7 @@
             "ingredients_text": "Aigua, malta d'ordi, sucre, llúpol i llevat."
         },
         {
-            "id": "bonpreu_18",
+            "id": "bonpreu_51",
             "name": "EL AGUILA Cervesa sense filtrar",
             "brand": "EL AGUILA",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/el-aguila-cervesa-sense-filtrar/51623",
@@ -1174,7 +1174,7 @@
             "ingredients_text": "Aigua, malt d'ordi, blat de moro, llúpol."
         },
         {
-            "id": "bonpreu_19",
+            "id": "bonpreu_52",
             "name": "TERRA I TAST Quefir de vaca ecològic",
             "brand": "TERRA I TAST",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/terra-i-tast-quefir-de-vaca-ecol%C3%B2gic/34432",
@@ -1197,7 +1197,7 @@
             "ingredients_text": "Llet sencera de vaca ecològica pasteuritzada, ferments làctics de quefir."
         },
         {
-            "id": "bonpreu_20",
+            "id": "bonpreu_53",
             "name": "TERRA I TAST Quefir d'ovella ecològic",
             "brand": "TERRA I TAST",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/terra-i-tast-quefir-d-ovella-ecol%C3%B2gic/34492",
@@ -1220,7 +1220,7 @@
             "ingredients_text": "Llet sencera d'ovella ecològica pasteuritzada, ferments làctics de quefir."
         },
         {
-            "id": "bonpreu_21",
+            "id": "bonpreu_54",
             "name": "BONPREU Iogurt natural ecològic",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-iogurt-natural-ecol%C3%B2gic/23666",
@@ -1243,7 +1243,7 @@
             "ingredients_text": "Llet sencera pasteuritzada de vaca ecològica, ferments làctics."
         },
         {
-            "id": "bonpreu_22",
+            "id": "bonpreu_55",
             "name": "SUMMUM Gaspatxo en cartró d'1 litre",
             "brand": "SUMMUM",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/summum-gaspatxo-en-cartr%C3%B3-d-1-litre/50548",
@@ -1266,7 +1266,7 @@
             "ingredients_text": "hortalisses fresques 95% (tomàquet, pebrot, cogombre, ceba, all), oli d'oliva verge extra (3%), vinagre de vi, sal, suc de llimona."
         },
         {
-            "id": "bonpreu_23",
+            "id": "bonpreu_56",
             "name": "NESCAFÉ Cafè amb llet i sucre 3 en 1",
             "brand": "NESCAFÉ",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/nescaf%C3%A9-caf%C3%A8-amb-llet-i-sucre-3-en-1/86566",
@@ -1289,7 +1289,7 @@
             "ingredients_text": "Sucre (47,5%), xarop de glucosa, cafè soluble (11,8%), greix de palmiste, fibra soluble, estabilitzants, proteïna de llet, aromes."
         },
         {
-            "id": "bonpreu_24",
+            "id": "bonpreu_57",
             "name": "GALLINA BLANCA Tallarines a la parmesana",
             "brand": "GALLINA BLANCA",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/gallina-blanca-tallarines-a-la-parmesana/03280",
@@ -1312,7 +1312,7 @@
             "ingredients_text": "pasta alimentària (tallarines)79%: sèmola de blat dur, formatge en pols, greix de palma, aromes, glutamat, sals minerals."
         },
         {
-            "id": "ing_25",
+            "id": "bonpreu_58",
             "name": "ECOBASICS Azuki Bio",
             "brand": "ECOBASICS",
             "source_url": null,
@@ -1335,7 +1335,7 @@
             "ingredients_text": "Mongeta azuki de cultiu ecològic 100%."
         },
         {
-            "id": "bonpreu_26",
+            "id": "bonpreu_59",
             "name": "GALLINA BLANCA Tallarines a la carbonara",
             "brand": "GALLINA BLANCA",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/gallina-blanca-tallarines-a-la-carbonara/23652",
@@ -1358,7 +1358,7 @@
             "ingredients_text": "pasta alimentària (tallarines) 75%: sèmola de blat dur, formatge fos, cansalada, greix de palma, aromes, additius."
         },
         {
-            "id": "bonpreu_27",
+            "id": "bonpreu_60",
             "name": "HÄAGEN-DAZS Gelat Strawberry Cheesecake",
             "brand": "HÄAGEN-DAZS",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/h%C3%A4agen-dazs-gelat-strawberry-cheesecake/46059",
@@ -1381,7 +1381,7 @@
             "ingredients_text": "Nata, llet desnatada condensada, sucre, puré de maduixa, farina de blat, rovell d'ou, mantega, aromes naturals, gelificant (pectina)."
         },
         {
-            "id": "bonpreu_28",
+            "id": "bonpreu_61",
             "name": "RUFFLES Patates ondulades",
             "brand": "RUFFLES",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/ruffles-patates-ondulades/00202",
@@ -1404,7 +1404,7 @@
             "ingredients_text": "Patates, olis vegetals (gira-sol i colza en proporcions variables), sal, antioxidants (extracte de romaní, àcid ascòrbic, extracte ric en tocoferols, àcid cítric)."
         },
         {
-            "id": "bonpreu_29",
+            "id": "bonpreu_62",
             "name": "BONPREU Bastonets de pa de blat d'espelta ecològics",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-bastonets-de-pa-de-blat-d-espelta-ecol%C3%B2gics/55573",
@@ -1427,7 +1427,7 @@
             "ingredients_text": "farina de blat d'espelta* (85%), oli d'oliva verge extra* (6%), llevat, sal marina."
         },
         {
-            "id": "bonpreu_30",
+            "id": "bonpreu_63",
             "name": "BONPREU Truita de patata i ceba",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-truita-de-patata-i-ceba/24288",
@@ -1450,7 +1450,7 @@
             "ingredients_text": "patata fregida (50%) (patata i oli vegetal de gira-sol), ou líquid pasteuritzat (30%), ceba fregida (15%), oli d'oliva verge extra (1%), sal."
         },
         {
-            "id": "bonpreu_31",
+            "id": "bonpreu_64",
             "name": "TURIA Cervesa torrada en llauna",
             "brand": "TURIA",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/turia-cervesa-torrada-en-llauna/42282",
@@ -1473,7 +1473,7 @@
             "ingredients_text": "aigua, malt d'ordi torrat, blat de moro, arròs, llúpol."
         },
         {
-            "id": "bonpreu_32",
+            "id": "bonpreu_65",
             "name": "BONPREU Crema verdures",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-crema-verdures/85039",
@@ -1496,7 +1496,7 @@
             "ingredients_text": "Aigua, hortalisses en proporció variable (42,5 %) (pastanaga, patata, ceba, espinacs, mongeta tendra, pèsols i porro), nata (llet), oli d'oliva, sal."
         },
         {
-            "id": "bonpreu_33",
+            "id": "bonpreu_66",
             "name": "BONPREU Crema de carbassa",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-crema-de-carbassa/37946",
@@ -1519,7 +1519,7 @@
             "ingredients_text": "Aigua, carbassa (23 %), hortalisses en proporció variable (19 %) (pastanaga, patata i ceba), nata (llet), oli d'oliva verge extra, sal."
         },
         {
-            "id": "bonpreu_34",
+            "id": "bonpreu_67",
             "name": "BONPREU Crema de carbassó",
             "brand": "BONPREU",
             "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-crema-de-carbass%C3%B3/32228",
