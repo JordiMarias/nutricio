@@ -5,9 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# Permisos necessaris per desplegar a GitHub Pages
+# Permisos necessaris per desplegar a GitHub Pages i crear/actualitzar la branca gh-pages
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -42,7 +42,13 @@ jobs:
 
       - name: Build WebAssembly App with Trunk
         run: |
-          trunk build --release --public-url /${{ github.event.repository.name }}/
+          trunk build --release --public-url /nutricio/
+
+      - name: Deploy to gh-pages branch (Fallback)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
@@ -55,3 +61,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
