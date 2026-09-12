@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="utf-8">
+    <title>Nutrició & Despesa Alimentària | Planificador Nutricional</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    <meta name="description" content="Calculadora nutricional, planificador de menús diaris/setmanals, control de despesa alimentària i classificació NOVA.">
+    
+<script type="module">
+import init, * as bindings from '/nutricio/NutritionalPlanner-4c1c166cd756ff6c.js';
+const wasm = await init({ module_or_path: '/nutricio/NutritionalPlanner-4c1c166cd756ff6c_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #121212;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            touch-action: pan-x pan-y;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+        #centered-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4CAF50;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+    </style>
+<link rel="modulepreload" href="/nutricio/NutritionalPlanner-4c1c166cd756ff6c.js" crossorigin="anonymous" integrity="sha384-GFM1pi/F97N1WRHoPngB4xkiKq77qebstSXj+EFJvCQunYOkufmm0XCgc68wwxtU"><link rel="preload" href="/nutricio/NutritionalPlanner-4c1c166cd756ff6c_bg.wasm" crossorigin="anonymous" integrity="sha384-9W5Zu2u8wrxSWENIJp28yOnoAvn2xpYX6nVwrKtFufvr6rF4RwJpbFlwI20jNXe5" as="fetch" type="application/wasm"></head>
+<body>
+    <canvas id="the_canvas_id"></canvas>
+    <div id="centered-loader">Carregant Nutrició App...</div>
+</body>
+</html>
