@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
     <meta charset="utf-8">
-    <title>Nutrició & Despesa Alimentària | Planificador Nutricional</title>
+    <title>Aplicació de control nutricional</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,8 +11,8 @@
     <meta name="description" content="Calculadora nutricional, planificador de menús diaris/setmanals, control de despesa alimentària i classificació NOVA.">
     
 <script type="module">
-import init, * as bindings from '/nutricio/NutritionalPlanner-4c1c166cd756ff6c.js';
-const wasm = await init({ module_or_path: '/nutricio/NutritionalPlanner-4c1c166cd756ff6c_bg.wasm' });
+import init, * as bindings from '/nutricio/NutritionalPlanner-ccef709d9a5fd0bc.js';
+const wasm = await init({ module_or_path: '/nutricio/NutritionalPlanner-ccef709d9a5fd0bc_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -51,9 +51,9 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
             text-align: center;
         }
     </style>
-<link rel="modulepreload" href="/nutricio/NutritionalPlanner-4c1c166cd756ff6c.js" crossorigin="anonymous" integrity="sha384-GFM1pi/F97N1WRHoPngB4xkiKq77qebstSXj+EFJvCQunYOkufmm0XCgc68wwxtU"><link rel="preload" href="/nutricio/NutritionalPlanner-4c1c166cd756ff6c_bg.wasm" crossorigin="anonymous" integrity="sha384-9W5Zu2u8wrxSWENIJp28yOnoAvn2xpYX6nVwrKtFufvr6rF4RwJpbFlwI20jNXe5" as="fetch" type="application/wasm"></head>
+<link rel="modulepreload" href="/nutricio/NutritionalPlanner-ccef709d9a5fd0bc.js" crossorigin="anonymous" integrity="sha384-Ia5ab/NxO641hv3+xMsN0orYIevOVxKTMEmeIpZNcsgQiapNE5SlInEszNG7EPBt"><link rel="preload" href="/nutricio/NutritionalPlanner-ccef709d9a5fd0bc_bg.wasm" crossorigin="anonymous" integrity="sha384-jGDheTnkGEEAgc5VTZs7Ej34Zjvyjorsb1OC0zkATJAFbKx568noQbIypG3Y1/D9" as="fetch" type="application/wasm"></head>
 <body>
     <canvas id="the_canvas_id"></canvas>
-    <div id="centered-loader">Carregant Nutrició App...</div>
+    <div id="centered-loader">Carregant l'aplicació de nutrició...</div>
 </body>
 </html>
