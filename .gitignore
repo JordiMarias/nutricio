@@ -3,7 +3,6 @@
 
 # WASM / Web build artifacts
 /dist/
-Trunk.toml
 
 # IDE & Editor files
 .idea/

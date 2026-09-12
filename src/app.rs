@@ -33,7 +33,27 @@ pub struct NutricioApp {
 
 impl NutricioApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        cc.egui_ctx.set_visuals(Visuals::dark());
+        let mut visuals = Visuals::dark();
+        visuals.panel_fill = egui::Color32::from_rgb(18, 22, 28);
+        visuals.window_fill = egui::Color32::from_rgb(26, 31, 39);
+        visuals.extreme_bg_color = egui::Color32::from_rgb(13, 17, 23);
+        visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(26, 31, 39);
+        visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(45, 52, 64));
+        visuals.widgets.noninteractive.rounding = egui::Rounding::same(8.0);
+        visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(33, 38, 47);
+        visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(55, 63, 76));
+        visuals.widgets.inactive.rounding = egui::Rounding::same(8.0);
+        visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(44, 51, 63);
+        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(34, 197, 94));
+        visuals.widgets.hovered.rounding = egui::Rounding::same(8.0);
+        visuals.widgets.active.bg_fill = egui::Color32::from_rgb(22, 101, 52);
+        visuals.widgets.active.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(34, 197, 94));
+        visuals.widgets.active.rounding = egui::Rounding::same(8.0);
+        visuals.selection.bg_fill = egui::Color32::from_rgb(22, 101, 52);
+        visuals.selection.stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(34, 197, 94));
+        visuals.window_rounding = egui::Rounding::same(12.0);
+        visuals.menu_rounding = egui::Rounding::same(8.0);
+        cc.egui_ctx.set_visuals(visuals);
 
         #[cfg(target_arch = "wasm32")]
         let (initial_state, notification) = {
@@ -232,6 +252,13 @@ impl eframe::App for NutricioApp {
                                 self.show_notification("✨ Iniciat de zero");
                                 ui.close_menu();
                             }
+                            if ui.button("🌱 Carregar Dades d'Exemple").clicked() {
+                                self.state = AppState::with_seed_data();
+                                #[cfg(target_arch = "wasm32")]
+                                self.sync_local_storage();
+                                self.show_notification("🌱 Dades d'exemple carregades");
+                                ui.close_menu();
+                            }
                             ui.separator();
                             if ui.button("📂 Carregar Fitxer...").clicked() {
                                 self.load_file_dialog();
@@ -275,6 +302,13 @@ impl eframe::App for NutricioApp {
                                 self.last_saved_state = Some(self.state.clone());
                             }
                             self.show_notification("✨ Iniciat de zero");
+                            ui.close_menu();
+                        }
+                        if ui.button("🌱 Carregar Dades d'Exemple").clicked() {
+                            self.state = AppState::with_seed_data();
+                            #[cfg(target_arch = "wasm32")]
+                            self.sync_local_storage();
+                            self.show_notification("🌱 Dades d'exemple carregades");
                             ui.close_menu();
                         }
                         ui.separator();

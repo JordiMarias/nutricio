@@ -224,14 +224,13 @@ impl ShoppingListView {
                         total_weekly_cost += nut.price_euro;
 
                         ui.group(|ui| {
-                            ui.horizontal(|ui| {
+                            ui.horizontal_wrapped(|ui| {
                                 crate::views::menu_planner::draw_nova_badge(ui, nova);
                                 ui.strong(&ing.name);
-                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                    ui.colored_label(egui::Color32::from_rgb(130, 220, 130), format!("{:.2} €", nut.price_euro));
-                                });
+                                ui.add_space(4.0);
+                                ui.colored_label(egui::Color32::from_rgb(130, 220, 130), format!("{:.2} €", nut.price_euro));
                             });
-                            ui.horizontal(|ui| {
+                            ui.horizontal_wrapped(|ui| {
                                 ui.label(format!("Quantitat total: {}", qty_str));
                             });
                         });
@@ -275,12 +274,16 @@ impl ShoppingListView {
 
             ui.separator();
             ui.group(|ui| {
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     ui.heading("💰 Cost Estimat Total Setmanal:");
                     ui.heading(format!("{:.2} €", total_weekly_cost));
                 });
             });
         }
+
+        let screen_rect = ui.ctx().screen_rect();
+        let modal_width = (screen_rect.width() - 20.0).min(560.0).max(280.0);
+        let modal_height = (screen_rect.height() - 40.0).min(650.0).max(300.0);
 
         // Export Dialog
         if self.show_export_dialog {
@@ -288,15 +291,20 @@ impl ShoppingListView {
             egui::Window::new("💾 Exportar Tota la Base de Dades (JSON)")
                 .collapsible(false)
                 .resizable(true)
-                .default_size([500.0, 350.0])
+                .pivot(egui::Align2::CENTER_CENTER)
+                .fixed_pos(screen_rect.center())
+                .max_width(modal_width)
+                .max_height(modal_height)
                 .show(ui.ctx(), |ui| {
-                    ui.label("Pots copiar el següent text JSON per desar la teva configuració, aliments i menús:");
-                    ui.code_editor(&mut self.exported_json);
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.label("Pots copiar el següent text JSON per desar la teva configuració, aliments i menús:");
+                        ui.code_editor(&mut self.exported_json);
 
-                    ui.separator();
-                    if ui.button("Tancar").clicked() {
-                        close = true;
-                    }
+                        ui.separator();
+                        if ui.button("Tancar").clicked() {
+                            close = true;
+                        }
+                    });
                 });
             if close {
                 self.show_export_dialog = false;
@@ -309,32 +317,37 @@ impl ShoppingListView {
             egui::Window::new("📥 Importar Dades (JSON)")
                 .collapsible(false)
                 .resizable(true)
-                .default_size([500.0, 350.0])
+                .pivot(egui::Align2::CENTER_CENTER)
+                .fixed_pos(screen_rect.center())
+                .max_width(modal_width)
+                .max_height(modal_height)
                 .show(ui.ctx(), |ui| {
-                    ui.label("Enganxa el text JSON exportat anteriorment:");
-                    ui.code_editor(&mut self.imported_json);
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.label("Enganxa el text JSON exportat anteriorment:");
+                        ui.code_editor(&mut self.imported_json);
 
-                    if let Some(msg) = &self.status_message {
-                        ui.label(msg);
-                    }
+                        if let Some(msg) = &self.status_message {
+                            ui.label(msg);
+                        }
 
-                    ui.separator();
-                    ui.horizontal(|ui| {
-                        if ui.button("Carregar Estat").clicked() {
-                            match load_state_from_json(&self.imported_json) {
-                                Ok(new_state) => {
-                                    *state = new_state;
-                                    self.status_message = Some("✅ Dades carregades amb èxit!".into());
-                                    close = true;
-                                }
-                                Err(err) => {
-                                    self.status_message = Some(format!("❌ Error en llegir JSON: {}", err));
+                        ui.separator();
+                        ui.horizontal_wrapped(|ui| {
+                            if ui.button("Carregar Estat").clicked() {
+                                match load_state_from_json(&self.imported_json) {
+                                    Ok(new_state) => {
+                                        *state = new_state;
+                                        self.status_message = Some("✅ Dades carregades amb èxit!".into());
+                                        close = true;
+                                    }
+                                    Err(err) => {
+                                        self.status_message = Some(format!("❌ Error en llegir JSON: {}", err));
+                                    }
                                 }
                             }
-                        }
-                        if ui.button("Cancel·lar").clicked() {
-                            close = true;
-                        }
+                            if ui.button("Cancel·lar").clicked() {
+                                close = true;
+                            }
+                        });
                     });
                 });
             if close {

@@ -77,19 +77,17 @@ impl DishesView {
 
         for (idx, dish) in state.dishes.iter().enumerate() {
             ui.group(|ui| {
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     let nova = dish.derived_nova_group(&state.ingredients);
                     crate::views::menu_planner::draw_nova_badge(ui, nova);
                     ui.heading(&dish.name);
-                    
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("🗑 Eliminar").clicked() {
-                            to_delete = Some(idx);
-                        }
-                        if ui.button("✏ Editar").clicked() {
-                            to_edit = Some(dish.clone());
-                        }
-                    });
+                    ui.add_space(4.0);
+                    if ui.button("✏ Editar").clicked() {
+                        to_edit = Some(dish.clone());
+                    }
+                    if ui.button("🗑 Eliminar").clicked() {
+                        to_delete = Some(idx);
+                    }
                 });
 
                 if let Some(desc) = &dish.description {
@@ -172,6 +170,10 @@ impl DishesView {
             state.dishes.remove(del_idx);
         }
 
+        let screen_rect = ui.ctx().screen_rect();
+        let modal_width = (screen_rect.width() - 20.0).min(560.0).max(280.0);
+        let modal_height = (screen_rect.height() - 40.0).min(650.0).max(300.0);
+
         // MODAL: Create / Edit Dish
         if self.show_create_dish_modal {
             let mut close_modal = false;
@@ -184,14 +186,17 @@ impl DishesView {
             egui::Window::new(modal_title)
                 .collapsible(false)
                 .resizable(true)
-                .default_size([560.0, 600.0])
+                .pivot(egui::Align2::CENTER_CENTER)
+                .fixed_pos(screen_rect.center())
+                .max_width(modal_width)
+                .max_height(modal_height)
                 .show(ui.ctx(), |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.label("Nom del Plat:");
                             ui.text_edit_singleline(&mut self.dish_name);
                         });
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.label("Descripció:");
                             ui.text_edit_singleline(&mut self.dish_desc);
                         });
@@ -209,7 +214,7 @@ impl DishesView {
                         ui.separator();
                         ui.heading("Afegir Ingredients:");
 
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.label("🔍 Cercar ingredient:");
                             ui.text_edit_singleline(&mut self.search_ing_query);
                         });
@@ -231,7 +236,7 @@ impl DishesView {
                                     }
                                     matched += 1;
                                     let is_sel = self.selected_add_ing_id == ing.id;
-                                    ui.horizontal(|ui| {
+                                    ui.horizontal_wrapped(|ui| {
                                         let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
                                         let ig = ing.get_glycemic_index();
                                         let level = ing.get_glycemic_level();
@@ -267,7 +272,7 @@ impl DishesView {
                                 UnitType::Per100g => ("Quantitat:", 0.1, 3000.0, "g"),
                                 UnitType::PerUnit { .. } => ("Quantitat:", 0.1, 50.0, "unitats"),
                             };
-                            ui.horizontal(|ui| {
+                            ui.horizontal_wrapped(|ui| {
                                 ui.label(label_text);
                                 ui.add(
                                     egui::DragValue::new(&mut self.add_ing_quantity)
@@ -296,7 +301,7 @@ impl DishesView {
                         } else {
                             let mut item_to_remove = None;
                             for (i_idx, item) in self.dish_items.iter().enumerate() {
-                                ui.horizontal(|ui| {
+                                ui.horizontal_wrapped(|ui| {
                                     if let Some(ing) = state.ingredients.iter().find(|i| i.id == item.ingredient_id) {
                                         let unit_suffix = match ing.unit_type {
                                             UnitType::Per100g => {
@@ -340,7 +345,7 @@ impl DishesView {
                             ui.add_space(4.0);
                             ui.group(|ui| {
                                 ui.vertical(|ui| {
-                                    ui.horizontal(|ui| {
+                                    ui.horizontal_wrapped(|ui| {
                                         crate::views::menu_planner::draw_nova_badge(ui, nova);
                                         ui.strong(format!("Valors totals del plat: {:.0} Kcal | {:.1}g Prot | {:.1}g Greixos | {:.1}g HdC | {:.2}€",
                                             nut.kcal, nut.protein_g, nut.fat_g, nut.carbs_g, nut.price_euro));
@@ -364,7 +369,7 @@ impl DishesView {
 
                         ui.separator();
 
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             let save_label = if self.editing_dish_id.is_some() {
                                 "💾 Desar Canvis"
                             } else {
