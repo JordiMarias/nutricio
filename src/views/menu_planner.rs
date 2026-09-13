@@ -646,7 +646,7 @@ impl MenuPlannerView {
                                 ui.label("Cap plat creat encara. Ves a 'Plats' per crear-ne.");
                             } else {
                                 for dish in &state.dishes {
-                                    if !q.is_empty() && !dish.name.to_lowercase().contains(&q) {
+                                    if !q.is_empty() && !matches_search(&dish.name, &q) {
                                         continue;
                                     }
                                     let is_sel = self.add_item_id == dish.id;
@@ -671,7 +671,10 @@ impl MenuPlannerView {
                                 ui.label("La base de dades d'aliments està buida.");
                             } else {
                                 for ing in &state.ingredients {
-                                    if !q.is_empty() && !ing.name.to_lowercase().contains(&q) && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&q) {
+                                    if !q.is_empty() 
+                                        && !matches_search(&ing.name, &q) 
+                                        && !matches_search(ing.brand.as_deref().unwrap_or(""), &q) 
+                                    {
                                         continue;
                                     }
                                     let is_sel = self.add_item_id == ing.id;

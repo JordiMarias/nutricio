@@ -229,8 +229,8 @@ impl DishesView {
                                 let mut matched = 0;
                                 for ing in &state.ingredients {
                                     if !q.is_empty() 
-                                        && !ing.name.to_lowercase().contains(&q) 
-                                        && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&q) 
+                                        && !matches_search(&ing.name, &q) 
+                                        && !matches_search(ing.brand.as_deref().unwrap_or(""), &q) 
                                     {
                                         continue;
                                     }
@@ -386,7 +386,7 @@ impl DishesView {
                                             dish.items = self.dish_items.clone();
                                         }
                                     } else {
-                                        let id = format!("dish_{}", state.dishes.len() + 1);
+                                        let id = state.generate_unique_dish_id("dish");
                                         let dish = Dish {
                                             id,
                                             name: self.dish_name.trim().to_string(),

@@ -5,6 +5,7 @@ use super::nutrition::NutritionalInfo;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum UnitType {
+    #[serde(alias = "Per100ml")]
     Per100g,
     PerUnit { grams_per_unit: f64 },
 }

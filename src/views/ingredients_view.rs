@@ -245,7 +245,10 @@ impl IngredientsView {
         if is_mobile {
             // Mobile Card View
             for (idx, ing) in state.ingredients.iter().enumerate() {
-                if !query.is_empty() && !ing.name.to_lowercase().contains(&query) && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&query) {
+                if !query.is_empty() 
+                    && !matches_search(&ing.name, &query) 
+                    && !matches_search(ing.brand.as_deref().unwrap_or(""), &query) 
+                {
                     continue;
                 }
                 if let Some(nova_filter) = self.selected_nova_filter {
@@ -312,7 +315,10 @@ impl IngredientsView {
                     ui.end_row();
 
                     for (idx, ing) in state.ingredients.iter().enumerate() {
-                        if !query.is_empty() && !ing.name.to_lowercase().contains(&query) && !ing.brand.as_deref().unwrap_or("").to_lowercase().contains(&query) {
+                        if !query.is_empty() 
+                            && !matches_search(&ing.name, &query) 
+                            && !matches_search(ing.brand.as_deref().unwrap_or(""), &query) 
+                        {
                             continue;
                         }
                         if let Some(nova_filter) = self.selected_nova_filter {
@@ -413,7 +419,7 @@ impl IngredientsView {
                             if ui.button("⚡ Descarregar i Carregar Dades Automàticament").clicked() {
                                 match fetch_and_parse_bonpreu_url(&self.bonpreu_url) {
                                     Ok(product) => {
-                                        let id = format!("bonpreu_{}", state.ingredients.len() + 1);
+                                        let id = state.generate_unique_ingredient_id("bonpreu");
                                         let ing = Ingredient {
                                             id,
                                             name: product.name.clone(),
@@ -447,7 +453,7 @@ impl IngredientsView {
                             if ui.button("Parsejar HTML de Bonpreu").clicked() {
                                 match parse_bonpreu_html(&self.bonpreu_html_paste, &self.bonpreu_url) {
                                     Ok(product) => {
-                                        let id = format!("bonpreu_{}", state.ingredients.len() + 1);
+                                        let id = state.generate_unique_ingredient_id("bonpreu");
                                         let ing = Ingredient {
                                             id,
                                             name: product.name.clone(),
@@ -511,7 +517,7 @@ impl IngredientsView {
                         ui.horizontal_wrapped(|ui| {
                             if ui.button("💾 Desar Aliment").clicked() {
                                 if !self.form_name.trim().is_empty() {
-                                    let id = format!("ing_{}", state.ingredients.len() + 1);
+                                    let id = state.generate_unique_ingredient_id("manual");
                                     let brand_opt = if self.form_brand.trim().is_empty() { None } else { Some(self.form_brand.trim().to_string()) };
                                     let ing_text_opt = if self.form_ingredients_text.trim().is_empty() { None } else { Some(self.form_ingredients_text.trim().to_string()) };
                                     let price_pack_opt = if self.form_price_per_pack > 0.0 { Some(self.form_price_per_pack) } else { None };

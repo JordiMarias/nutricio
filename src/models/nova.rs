@@ -2,9 +2,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NovaGroup {
+    #[serde(alias = "1", alias = "Group1", alias = "Group1Unprocessed")]
     Group1Unprocessed = 1,
+    #[serde(alias = "2", alias = "Group2", alias = "Group2ProcessedIngredient")]
     Group2ProcessedIngredient = 2,
+    #[serde(alias = "3", alias = "Group3", alias = "Group3Processed", alias = "Group3ProcessedFoods")]
     Group3Processed = 3,
+    #[serde(alias = "4", alias = "Group4", alias = "Group4UltraProcessed")]
     Group4UltraProcessed = 4,
 }
 

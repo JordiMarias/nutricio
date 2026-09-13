@@ -383,6 +383,40 @@ mod tests {
         assert_eq!(state.ingredients[0].per_unit_nutrition.kcal, 330.0);
         assert_eq!(state.ingredients[0].price_per_pack, Some(0.95));
     }
+
+    #[test]
+    fn test_load_base_database_json_file() {
+        let mut state = nutricio::storage::AppState::empty();
+        let file_content = std::fs::read_to_string("base_database.json").expect("base_database.json should exist");
+        let res = state.merge_database_from_json(&file_content);
+        assert!(res.is_ok(), "Failed to parse base_database.json: {:?}", res.err());
+        let (n_ing, n_dish) = res.unwrap();
+        assert_eq!(n_ing, 77);
+        assert_eq!(n_dish, 1);
+        assert_eq!(state.ingredients.len(), 77);
+        assert_eq!(state.dishes.len(), 1);
+
+        // Verify that all IDs are unique and start with base_
+        let mut seen_ids = std::collections::HashSet::new();
+        for ing in &state.ingredients {
+            assert!(ing.id.starts_with("base_"), "Ingredient id {} should start with base_", ing.id);
+            assert!(seen_ids.insert(ing.id.clone()), "Duplicate id: {}", ing.id);
+        }
+
+        // Verify dish 1 ingredients exist in database
+        let dish = &state.dishes[0];
+        assert_eq!(dish.id, "base_dish_1");
+        for item in &dish.items {
+            assert!(seen_ids.contains(&item.ingredient_id), "Dish ingredient {} not in DB", item.ingredient_id);
+        }
+
+        // Test dynamic ID generator guarantees no collision
+        let new_manual_id = state.generate_unique_ingredient_id("manual");
+        assert_eq!(new_manual_id, "manual_1");
+
+        let new_base_id = state.generate_unique_ingredient_id("base");
+        assert_eq!(new_base_id, "base_78");
+    }
 }
 
 

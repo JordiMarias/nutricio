@@ -56,6 +56,28 @@ impl AppState {
         self.daily_journal.iter_mut().find(|l| l.date == date_str).unwrap()
     }
 
+    pub fn generate_unique_ingredient_id(&self, prefix: &str) -> String {
+        let mut i = 1;
+        loop {
+            let candidate = format!("{}_{}", prefix, i);
+            if !self.ingredients.iter().any(|ing| ing.id == candidate) {
+                return candidate;
+            }
+            i += 1;
+        }
+    }
+
+    pub fn generate_unique_dish_id(&self, prefix: &str) -> String {
+        let mut i = 1;
+        loop {
+            let candidate = format!("{}_{}", prefix, i);
+            if !self.dishes.iter().any(|d| d.id == candidate) {
+                return candidate;
+            }
+            i += 1;
+        }
+    }
+
     #[allow(dead_code)]
     pub fn with_seed_data() -> Self {
         Self {
