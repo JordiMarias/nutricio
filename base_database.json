@@ -2058,6 +2058,75 @@
             "nova_group": "Group1Unprocessed",
             "glycemic_index": 35,
             "ingredients_text": null
+        },
+        {
+            "id": "base_89",
+            "name": "Paulaner Original Münchner Hell",
+            "brand": "Paulaner Oktoberfest",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 38.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 2.2,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 0.5,
+                "salt_g": 0.0,
+                "price_euro": 0.0
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 89,
+            "ingredients_text": null
+        },
+        {
+            "id": "base_90",
+            "name": "Paulaner Salvator",
+            "brand": "Paulaner Oktoberfest",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 62.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 4.5,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 1.0,
+                "salt_g": 0.0,
+                "price_euro": 0.0
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 89,
+            "ingredients_text": null
+        },
+        {
+            "id": "base_91",
+            "name": "Paulaner Weißbier Naturtrüb",
+            "brand": "Paulaner Oktoberfest",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 42.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 3.2,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 0.6,
+                "salt_g": 0.0,
+                "price_euro": 0.0
+            },
+            "price_per_pack": null,
+            "pack_weight_g": null,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 89,
+            "ingredients_text": null
         }
     ],
     "dishes": [
