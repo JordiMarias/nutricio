@@ -2127,6 +2127,29 @@
             "nova_group": "Group3Processed",
             "glycemic_index": 89,
             "ingredients_text": null
+        },
+        {
+            "id": "base_92",
+            "name": "Croissant de xocolata",
+            "brand": "Europastry / Bonpreu",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/croissant-de-xocolata/66654",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 445.0,
+                "fat_g": 28.5,
+                "saturated_fat_g": 14.0,
+                "carbs_g": 42.5,
+                "sugars_g": 14.0,
+                "fiber_g": 3.2,
+                "protein_g": 7.0,
+                "salt_g": 0.9,
+                "price_euro": 1.10
+            },
+            "price_per_pack": 0.99,
+            "pack_weight_g": 90.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 70,
+            "ingredients_text": "farina de blat, margarina vegetal (greix vegetal (palma), xarop de glucosa i fructosa, olis vegetals (gira-sol, soja), aigua, emulgents (E-322, E-471), acidulant (E-330), aroma natural, colorant (E-160a)), aigua, xocolata (15%) (sucre, pasta de cacau (5,9%), mantega de cacau (0,96%), emulgent (E-322 (soja)), aroma), gluten de BLAT, sucre, dextrosa, llevat, sal, ou líquid pasteuritzat, agent de tractament de la farina (E-300), espessant (E-466), emulgent (E-472e), fibra de blat."
         }
     ],
     "dishes": [
