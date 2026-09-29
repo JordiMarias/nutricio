@@ -265,7 +265,7 @@
                 "saturated_fat_g": 0.4,
                 "carbs_g": 67.0,
                 "sugars_g": 3.0,
-                "fiber_g": 0.0,
+                "fiber_g": 11.0,
                 "protein_g": 12.0,
                 "salt_g": 0.02,
                 "price_euro": 0.258
@@ -2150,6 +2150,98 @@
             "nova_group": "Group4UltraProcessed",
             "glycemic_index": 70,
             "ingredients_text": "farina de blat, margarina vegetal (greix vegetal (palma), xarop de glucosa i fructosa, olis vegetals (gira-sol, soja), aigua, emulgents (E-322, E-471), acidulant (E-330), aroma natural, colorant (E-160a)), aigua, xocolata (15%) (sucre, pasta de cacau (5,9%), mantega de cacau (0,96%), emulgent (E-322 (soja)), aroma), gluten de BLAT, sucre, dextrosa, llevat, sal, ou líquid pasteuritzat, agent de tractament de la farina (E-300), espessant (E-466), emulgent (E-472e), fibra de blat."
+        },
+        {
+            "id": "base_93",
+            "name": "Tallarines de blat barrejades amb carn picada, salsa i cacauets",
+            "brand": "Bar crepería",
+            "source_url": "https://www.google.com/maps/place/Bar+creper%C3%ADa+Xianhui+Jie/@41.3883296,2.1579749,19z",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 178.0,
+                "fat_g": 7.4,
+                "saturated_fat_g": 1.7,
+                "carbs_g": 21.3,
+                "sugars_g": 2.0,
+                "fiber_g": 1.7,
+                "protein_g": 5.9,
+                "salt_g": 1.18,
+                "price_euro": 1.53
+            },
+            "price_per_pack": 6.50,
+            "pack_weight_g": 425.0,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 53,
+            "ingredients_text": "Fideus de blat, carn picada de porc saltejada, col xinesa (bok choy), cacauets fregits, coriandre, ceba tendra, salsa de soja, salsa de soja fosca, oli vegetal, oli de sèsam, vinagre negre de Chinkiang, all, gingebre, sucre, sal, glutamat monosòdic."
+        },
+        {
+            "id": "base_94",
+            "name": "Crestes de porc a la planxa (Dumplings / Guotie)",
+            "brand": "Bar crepería",
+            "source_url": "https://www.google.com/maps/place/Bar+creper%C3%ADa+Xianhui+Jie/@41.3883296,2.1579749,19z",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 215.0,
+                "fat_g": 10.5,
+                "saturated_fat_g": 3.4,
+                "carbs_g": 21.0,
+                "sugars_g": 1.2,
+                "fiber_g": 1.4,
+                "protein_g": 8.8,
+                "salt_g": 1.25,
+                "price_euro": 1.92
+            },
+            "price_per_pack": 5.00,
+            "pack_weight_g": 260.0,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 50,
+            "ingredients_text": "Farina de blat, carn picada de porc, col xinesa, aigua, ceba tendra, salsa de soja, oli vegetal, vinagre negre de Chinkiang, oli de sèsam, gingebre, all, sèsam negre, sal, pebre blanc, vi d'arròs de Shaoxing, midó de blat de moro."
+        },
+        {
+            "id": "base_95",
+            "name": "Dürüm kebab mixt complet amb salsa picant",
+            "brand": "Kebab estàndard",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 202.0,
+                "fat_g": 10.8,
+                "saturated_fat_g": 3.7,
+                "carbs_g": 16.2,
+                "sugars_g": 2.1,
+                "fiber_g": 1.4,
+                "protein_g": 9.5,
+                "salt_g": 1.45,
+                "price_euro": 1.55
+            },
+            "price_per_pack": 6.50,
+            "pack_weight_g": 420.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 52,
+            "ingredients_text": "Pa de durum (farina de blat, aigua, oli vegetal, llevat, sal, emulgents), carn mixta picada i adobada (carn de pollastre, carn de vedella, greix animal, aigua, proteïna de soja, pa ratllat, midó, sal, espècies, estabilitzants E-450 i E-451, potenciador del sabor E-621), salsa blanca (oli de gira-sol, aigua, iogurt pasteuritzat, rovell d'ou, all, sal, vinagre, conservants), salsa picant (aigua, tomàquet concentrat, xili vermell picat, vinagre, oli de gira-sol, sal, comí, pebre vermell), enciam iceberg, tomàquet, col, ceba."
+        },
+        {
+            "id": "base_96",
+            "name": "Pa de pagès tradicional",
+            "brand": "Genèric (Artesanal / IGP)",
+            "source_url": "https://www.mapa.gob.es/es/alimentacion/temas/calidad-diferenciada/dop-igp/pan-pasteleria/IGP_Pan_de_Pages_Catalan.aspx",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 258.0,
+                "fat_g": 1.4,
+                "saturated_fat_g": 0.25,
+                "carbs_g": 52.0,
+                "sugars_g": 1.8,
+                "fiber_g": 3.8,
+                "protein_g": 8.5,
+                "salt_g": 1.40,
+                "price_euro": 0.45
+            },
+            "price_per_pack": 2.25,
+            "pack_weight_g": 500.0,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 68,
+            "ingredients_text": "Farina de blat, aigua, massa mare natural, llevat biològic, sal."
         }
     ],
     "dishes": [
