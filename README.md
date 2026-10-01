@@ -54,6 +54,7 @@ It bridges nutritional science with budget management, helping users reach healt
 - 📄 **HTML & JSON Export/Import**:
   - Export beautiful, self-contained standalone HTML menu reports (`menu_setmanal_report.html`) complete with CSS styling and summary tables.
   - Save and load complete app state as JSON (`nutricio_estat.json`).
+  - Import external food/ingredient lists from AI chatbots or scrapers formatted in JSON (see [Food JSON Specification](FOOD_JSON_SPECIFICATION.md)).
 
 ---
 

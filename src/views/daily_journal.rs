@@ -6,6 +6,13 @@ use crate::models::*;
 use crate::storage::AppState;
 use crate::views::menu_planner::{draw_glycemic_badge, draw_nova_badge};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AddItemCategory {
+    Ingredient,
+    Dish,
+    Punctual,
+}
+
 pub struct DailyJournalView {
     pub selected_date: String,
     pub selected_meal: Option<MealType>,
@@ -13,11 +20,30 @@ pub struct DailyJournalView {
     pub show_edit_goals_modal: bool,
     pub show_copy_confirm_dialog: bool,
     pub copy_source_day_idx: usize,
+    pub add_category: AddItemCategory,
     pub add_is_dish: bool,
     pub add_item_id: String,
     pub add_quantity: f64,
     pub picker_search: String,
     pub export_message: Option<String>,
+
+    // Formulari d'aliment puntual
+    pub punctual_name: String,
+    pub punctual_brand: String,
+    pub punctual_kcal: f64,
+    pub punctual_fat: f64,
+    pub punctual_sat_fat: f64,
+    pub punctual_carbs: f64,
+    pub punctual_sugar: f64,
+    pub punctual_fiber: f64,
+    pub punctual_protein: f64,
+    pub punctual_salt: f64,
+    pub punctual_price: f64,
+    pub punctual_nova: NovaGroup,
+    pub punctual_ig: u8,
+    pub punctual_ingredients_text: String,
+    pub punctual_json_paste: String,
+    pub punctual_json_status: Option<String>,
 }
 
 impl Default for DailyJournalView {
@@ -29,12 +55,251 @@ impl Default for DailyJournalView {
             show_edit_goals_modal: false,
             show_copy_confirm_dialog: false,
             copy_source_day_idx: 0,
+            add_category: AddItemCategory::Ingredient,
             add_is_dish: false,
             add_item_id: String::new(),
             add_quantity: 100.0,
             picker_search: String::new(),
             export_message: None,
+
+            punctual_name: String::new(),
+            punctual_brand: String::new(),
+            punctual_kcal: 0.0,
+            punctual_fat: 0.0,
+            punctual_sat_fat: 0.0,
+            punctual_carbs: 0.0,
+            punctual_sugar: 0.0,
+            punctual_fiber: 0.0,
+            punctual_protein: 0.0,
+            punctual_salt: 0.0,
+            punctual_price: 0.0,
+            punctual_nova: NovaGroup::Group1Unprocessed,
+            punctual_ig: 50,
+            punctual_ingredients_text: String::new(),
+            punctual_json_paste: String::new(),
+            punctual_json_status: None,
         }
+    }
+}
+
+impl DailyJournalView {
+    pub fn reset_punctual_form(&mut self) {
+        self.punctual_name.clear();
+        self.punctual_brand.clear();
+        self.punctual_kcal = 0.0;
+        self.punctual_fat = 0.0;
+        self.punctual_sat_fat = 0.0;
+        self.punctual_carbs = 0.0;
+        self.punctual_sugar = 0.0;
+        self.punctual_fiber = 0.0;
+        self.punctual_protein = 0.0;
+        self.punctual_salt = 0.0;
+        self.punctual_price = 0.0;
+        self.punctual_nova = NovaGroup::Group1Unprocessed;
+        self.punctual_ig = 50;
+        self.punctual_ingredients_text.clear();
+        self.punctual_json_paste.clear();
+        self.punctual_json_status = None;
+    }
+
+    pub fn load_punctual_from_json(&mut self) {
+        let text = self.punctual_json_paste.trim();
+        if text.is_empty() {
+            self.punctual_json_status = Some("⚠️ Enganxa un text JSON abans d'importar.".to_string());
+            return;
+        }
+
+        match parse_punctual_ingredient_json(text) {
+            Ok(ing) => {
+                let ig = ing.get_glycemic_index();
+                self.punctual_name = ing.name;
+                self.punctual_brand = ing.brand.unwrap_or_default();
+                self.punctual_kcal = ing.per_unit_nutrition.kcal;
+                self.punctual_fat = ing.per_unit_nutrition.fat_g;
+                self.punctual_sat_fat = ing.per_unit_nutrition.saturated_fat_g;
+                self.punctual_carbs = ing.per_unit_nutrition.carbs_g;
+                self.punctual_sugar = ing.per_unit_nutrition.sugars_g;
+                self.punctual_fiber = ing.per_unit_nutrition.fiber_g;
+                self.punctual_protein = ing.per_unit_nutrition.protein_g;
+                self.punctual_salt = ing.per_unit_nutrition.salt_g;
+                self.punctual_price = ing.per_unit_nutrition.price_euro;
+                self.punctual_nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                self.punctual_ig = ig;
+                self.punctual_ingredients_text = ing.ingredients_text.unwrap_or_default();
+                if let Some(w) = ing.pack_weight_g {
+                    if w > 0.0 {
+                        self.add_quantity = w;
+                    }
+                }
+                self.punctual_json_status = Some("✅ Dades carregades correctament al formulari!".to_string());
+            }
+            Err(e) => {
+                self.punctual_json_status = Some(format!("❌ Error en interpretar el JSON: {}", e));
+            }
+        }
+    }
+}
+
+pub fn parse_punctual_ingredient_json(json_str: &str) -> Result<Ingredient, String> {
+    let val: serde_json::Value = serde_json::from_str(json_str)
+        .map_err(|e| format!("Format JSON invàlid: {}", e))?;
+
+    let target_obj = match &val {
+        serde_json::Value::Object(map) => {
+            if let Some(arr_val) = map.get("ingredients").or_else(|| map.get("aliments")).or_else(|| map.get("alimentos")).or_else(|| map.get("punctual")) {
+                if let Some(first) = arr_val.as_array().and_then(|a| a.first()) {
+                    first.clone()
+                } else {
+                    val.clone()
+                }
+            } else {
+                val.clone()
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            if let Some(first) = arr.first() {
+                first.clone()
+            } else {
+                return Err("L'array JSON està buit".to_string());
+            }
+        }
+        _ => return Err("El JSON ha de ser un objecte o una llista".to_string()),
+    };
+
+    // 1. Prova de deserialització directa amb Serde
+    if let Ok(mut ing) = serde_json::from_value::<Ingredient>(target_obj.clone()) {
+        if ing.id.is_empty() {
+            ing.id = "punctual_temp".to_string();
+        }
+        return Ok(ing);
+    }
+
+    // 2. Parser flexible per a respostes d'agents IA
+    if let serde_json::Value::Object(map) = target_obj {
+        let name = map.get("name")
+            .or_else(|| map.get("nom"))
+            .or_else(|| map.get("title"))
+            .or_else(|| map.get("plat"))
+            .or_else(|| map.get("food"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("Aliment Puntual")
+            .to_string();
+
+        let brand = map.get("brand")
+            .or_else(|| map.get("marca"))
+            .or_else(|| map.get("restaurant"))
+            .or_else(|| map.get("lloc"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+
+        let nut_val = map.get("per_unit_nutrition")
+            .or_else(|| map.get("nutrition"))
+            .or_else(|| map.get("nutritional_info"))
+            .or_else(|| map.get("nutricio"));
+
+        let get_num = |keys: &[&str]| -> f64 {
+            for k in keys {
+                if let Some(n) = nut_val.and_then(|nv| nv.get(*k)).and_then(|v| v.as_f64()) {
+                    return n;
+                }
+                if let Some(n) = map.get(*k).and_then(|v| v.as_f64()) {
+                    return n;
+                }
+            }
+            0.0
+        };
+
+        let kcal = get_num(&["kcal", "calories", "calorias", "energia"]);
+        let fat_g = get_num(&["fat_g", "fat", "greixos", "grasas", "total_fat"]);
+        let saturated_fat_g = get_num(&["saturated_fat_g", "saturated_fat", "greixos_saturats", "grasas_saturadas"]);
+        let carbs_g = get_num(&["carbs_g", "carbs", "carbohydrates", "hidrats", "carbohidratos"]);
+        let sugars_g = get_num(&["sugars_g", "sugars", "sugar", "sucres", "azucares"]);
+        let fiber_g = get_num(&["fiber_g", "fiber", "fibra"]);
+        let protein_g = get_num(&["protein_g", "protein", "proteina", "proteïna"]);
+        let salt_g = get_num(&["salt_g", "salt", "sal"]);
+        let price_euro = get_num(&["price_euro", "price", "preu", "precio"]);
+
+        let nova_group = map.get("nova_group")
+            .or_else(|| map.get("nova"))
+            .and_then(|v| {
+                if let Some(n) = v.as_u64() {
+                    match n {
+                        1 => Some(NovaGroup::Group1Unprocessed),
+                        2 => Some(NovaGroup::Group2ProcessedIngredient),
+                        3 => Some(NovaGroup::Group3Processed),
+                        4 => Some(NovaGroup::Group4UltraProcessed),
+                        _ => None,
+                    }
+                } else if let Some(s) = v.as_str() {
+                    let sl = s.to_lowercase();
+                    if sl.contains('4') || sl.contains("ultra") {
+                        Some(NovaGroup::Group4UltraProcessed)
+                    } else if sl.contains('3') || sl.contains("processedfoods") || (sl.contains("processed") && !sl.contains("ingredient") && !sl.contains("unprocessed")) {
+                        Some(NovaGroup::Group3Processed)
+                    } else if sl.contains('2') || sl.contains("ingredient") || sl.contains("culinary") {
+                        Some(NovaGroup::Group2ProcessedIngredient)
+                    } else if sl.contains('1') || sl.contains("unprocessed") {
+                        Some(NovaGroup::Group1Unprocessed)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(NovaGroup::Group1Unprocessed);
+
+        let glycemic_index = map.get("glycemic_index")
+            .or_else(|| map.get("gi"))
+            .or_else(|| map.get("ig"))
+            .or_else(|| map.get("index_glucemic"))
+            .and_then(|v| v.as_u64())
+            .map(|n| n.min(100) as u8);
+
+        let ingredients_text = map.get("ingredients_text")
+            .or_else(|| map.get("ingredients"))
+            .or_else(|| map.get("text"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+
+        let pack_weight_g = map.get("pack_weight_g")
+            .or_else(|| map.get("serving_size_g"))
+            .or_else(|| map.get("serving_size"))
+            .or_else(|| map.get("serving_g"))
+            .or_else(|| map.get("portion_g"))
+            .or_else(|| map.get("weight_g"))
+            .or_else(|| map.get("weight"))
+            .or_else(|| map.get("grams"))
+            .or_else(|| map.get("quantitat"))
+            .and_then(|v| v.as_f64());
+
+        let nut = NutritionalInfo {
+            kcal,
+            fat_g,
+            saturated_fat_g,
+            carbs_g,
+            sugars_g,
+            fiber_g,
+            protein_g,
+            salt_g,
+            price_euro,
+        };
+
+        Ok(Ingredient {
+            id: "punctual_temp".to_string(),
+            name,
+            brand,
+            source_url: None,
+            unit_type: UnitType::Per100g,
+            per_unit_nutrition: nut,
+            price_per_pack: None,
+            pack_weight_g,
+            nova_group: Some(nova_group),
+            glycemic_index,
+            ingredients_text,
+        })
+    } else {
+        Err("L'element no és un objecte JSON vàlid".to_string())
     }
 }
 
@@ -242,9 +507,10 @@ impl DailyJournalView {
         ui.add_space(6.0);
 
         // Destructure state to avoid borrowing conflicts
-        let AppState { ingredients, dishes, weekly_menu, goals, daily_journal } = state;
+        let all_ingredients = state.all_ingredients();
+        let AppState { ingredients, dishes, weekly_menu, goals, daily_journal, punctual_ingredients } = state;
         let log = &mut daily_journal[log_idx];
-        let total_nut = log.daily_menu.calculate_total_nutrition(ingredients, dishes);
+        let total_nut = log.daily_menu.calculate_total_nutrition(&all_ingredients, dishes);
 
         // SECTION 1: Top Calorie & Macro Hero Card (Clean Nutrition Dashboard)
         ui.group(|ui| {
@@ -309,11 +575,11 @@ impl DailyJournalView {
             for entry in entries.iter() {
                 if entry.is_dish {
                     if let Some(dish) = dishes.iter().find(|d| d.id == entry.item_id) {
-                        let nut = dish.calculate_total_nutrition(ingredients).scale(entry.quantity);
+                        let nut = dish.calculate_total_nutrition(&all_ingredients).scale(entry.quantity);
                         meal_kcal += nut.kcal;
                         meal_price += nut.price_euro;
                     }
-                } else if let Some(ing) = ingredients.iter().find(|i| i.id == entry.item_id) {
+                } else if let Some(ing) = all_ingredients.iter().find(|i| i.id == entry.item_id) {
                     let nut = ing.calculate_nutrition(entry.quantity);
                     meal_kcal += nut.kcal;
                     meal_price += nut.price_euro;
@@ -346,11 +612,11 @@ impl DailyJournalView {
                         ui.group(|ui| {
                             if entry.is_dish {
                                 if let Some(dish) = dishes.iter().find(|d| d.id == entry.item_id) {
-                                    let nova = dish.derived_nova_group(ingredients);
-                                    let ig = dish.derived_glycemic_index(ingredients);
-                                    let level = dish.derived_glycemic_level(ingredients);
-                                    let cg = dish.calculate_glycemic_load(ingredients) * entry.quantity;
-                                    let nut = dish.calculate_total_nutrition(ingredients).scale(entry.quantity);
+                                    let nova = dish.derived_nova_group(&all_ingredients);
+                                    let ig = dish.derived_glycemic_index(&all_ingredients);
+                                    let level = dish.derived_glycemic_level(&all_ingredients);
+                                    let cg = dish.calculate_glycemic_load(&all_ingredients) * entry.quantity;
+                                    let nut = dish.calculate_total_nutrition(&all_ingredients).scale(entry.quantity);
 
                                     ui.horizontal_wrapped(|ui| {
                                         draw_nova_badge(ui, nova);
@@ -378,7 +644,8 @@ impl DailyJournalView {
                                     ui.label(format!("Plat desconegut ({})", entry.item_id));
                                 }
                             } else {
-                                if let Some(ing) = ingredients.iter().find(|i| i.id == entry.item_id) {
+                                if let Some(ing) = all_ingredients.iter().find(|i| i.id == entry.item_id) {
+                                    let is_punctual = punctual_ingredients.iter().any(|p| p.id == ing.id);
                                     let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
                                     let ig = ing.get_glycemic_index();
                                     let level = ing.get_glycemic_level();
@@ -392,7 +659,12 @@ impl DailyJournalView {
                                     ui.horizontal_wrapped(|ui| {
                                         draw_nova_badge(ui, nova);
                                         draw_glycemic_badge(ui, level, ig);
-                                        ui.strong(format!("🥗 {}", ing.name));
+                                        let name_str = if is_punctual {
+                                            format!("✨ {} [Puntual]", ing.name)
+                                        } else {
+                                            format!("🥗 {}", ing.name)
+                                        };
+                                        ui.strong(name_str);
                                         if ui.small_button("🗑").clicked() {
                                             to_remove = Some(entry_idx);
                                         }
@@ -446,10 +718,10 @@ impl DailyJournalView {
                             for (entry_idx, entry) in entries.iter_mut().enumerate() {
                                 if entry.is_dish {
                                     if let Some(dish) = dishes.iter().find(|d| d.id == entry.item_id) {
-                                        let nova = dish.derived_nova_group(ingredients);
-                                        let ig = dish.derived_glycemic_index(ingredients);
-                                        let level = dish.derived_glycemic_level(ingredients);
-                                        let cg = dish.calculate_glycemic_load(ingredients) * entry.quantity;
+                                        let nova = dish.derived_nova_group(&all_ingredients);
+                                        let ig = dish.derived_glycemic_index(&all_ingredients);
+                                        let level = dish.derived_glycemic_level(&all_ingredients);
+                                        let cg = dish.calculate_glycemic_load(&all_ingredients) * entry.quantity;
 
                                         ui.horizontal(|ui| {
                                             draw_nova_badge(ui, nova);
@@ -462,7 +734,7 @@ impl DailyJournalView {
                                             ui.small("racions");
                                         });
 
-                                        let nut = dish.calculate_total_nutrition(ingredients).scale(entry.quantity);
+                                        let nut = dish.calculate_total_nutrition(&all_ingredients).scale(entry.quantity);
                                         ui.label(format!("{:.0}", nut.kcal));
                                         ui.label(format!("{:.1}g ({:.1}g)", nut.fat_g, nut.saturated_fat_g));
                                         ui.label(format!("{:.1}g ({:.1}g) [CG {:.1}]", nut.carbs_g, nut.sugars_g, cg));
@@ -475,7 +747,8 @@ impl DailyJournalView {
                                         for _ in 0..8 { ui.label("-"); }
                                     }
                                 } else {
-                                    if let Some(ing) = ingredients.iter().find(|i| i.id == entry.item_id) {
+                                    if let Some(ing) = all_ingredients.iter().find(|i| i.id == entry.item_id) {
+                                        let is_punctual = punctual_ingredients.iter().any(|p| p.id == ing.id);
                                         let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
                                         let ig = ing.get_glycemic_index();
                                         let level = ing.get_glycemic_level();
@@ -484,7 +757,12 @@ impl DailyJournalView {
                                         ui.horizontal(|ui| {
                                             draw_nova_badge(ui, nova);
                                             draw_glycemic_badge(ui, level, ig);
-                                            ui.label(format!("🥗 {}", ing.name));
+                                            let name_str = if is_punctual {
+                                                format!("✨ {} [Puntual]", ing.name)
+                                            } else {
+                                                format!("🥗 {}", ing.name)
+                                            };
+                                            ui.label(name_str);
                                         });
 
                                         let (speed, unit_str, max_range) = match ing.unit_type {
@@ -537,7 +815,7 @@ impl DailyJournalView {
 
             ui.group(|ui| {
                 ui.strong("📈 Índex i Càrrega Glucèmica (CG)");
-                let total_cg = day_menu.calculate_total_glycemic_load(ingredients, dishes);
+                let total_cg = day_menu.calculate_total_glycemic_load(&all_ingredients, dishes);
                 let cg_ratio = (total_cg / goals.max_glycemic_load).clamp(0.0, 1.0);
                 let cg_color = if total_cg <= goals.max_glycemic_load {
                     Color32::from_rgb(34, 197, 94)
@@ -557,7 +835,7 @@ impl DailyJournalView {
 
             ui.group(|ui| {
                 ui.strong("🏷 Classificació NOVA");
-                let nova_map = day_menu.nova_breakdown(ingredients, dishes);
+                let nova_map = day_menu.nova_breakdown(&all_ingredients, dishes);
                 let total_k = total_nut.kcal;
 
                 for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
@@ -696,148 +974,364 @@ impl DailyJournalView {
             let mut close_modal = false;
             let meal = self.selected_meal.unwrap_or(MealType::Breakfast);
 
+            let modal_width_dyn = if is_mobile { (screen_rect.width() - 20.0).max(280.0) } else { 620.0 };
+            let modal_height_dyn = if is_mobile { (screen_rect.height() - 40.0).max(350.0) } else { 580.0 };
+
             egui::Window::new(format!("Afegir Element a: {}", meal.name_ca()))
                 .collapsible(false)
-                .resizable(false)
+                .resizable(true)
                 .pivot(egui::Align2::CENTER_CENTER)
                 .fixed_pos(screen_rect.center())
-                .default_width(modal_width)
-                .max_width(modal_width)
-                .max_height(modal_height)
+                .default_width(modal_width_dyn)
+                .max_width(modal_width_dyn)
+                .max_height(modal_height_dyn)
                 .show(ui.ctx(), |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.selectable_label(!self.add_is_dish, "🥗 Aliments").clicked() {
+                    ui.horizontal_wrapped(|ui| {
+                        if ui.selectable_label(self.add_category == AddItemCategory::Ingredient, "🥗 Aliments").clicked() {
+                            self.add_category = AddItemCategory::Ingredient;
                             self.add_is_dish = false;
                             self.add_item_id.clear();
                         }
-                        if ui.selectable_label(self.add_is_dish, "🍲 Plats").clicked() {
+                        if ui.selectable_label(self.add_category == AddItemCategory::Dish, "🍲 Plats").clicked() {
+                            self.add_category = AddItemCategory::Dish;
                             self.add_is_dish = true;
+                            self.add_item_id.clear();
+                        }
+                        if ui.selectable_label(self.add_category == AddItemCategory::Punctual, "✨ Aliment Puntual").clicked() {
+                            self.add_category = AddItemCategory::Punctual;
+                            self.add_is_dish = false;
                             self.add_item_id.clear();
                         }
                     });
 
                     ui.separator();
 
-                    ui.horizontal(|ui| {
-                        ui.label("🔍 Cercar:");
-                        ui.text_edit_singleline(&mut self.picker_search);
-                    });
+                    if self.add_category == AddItemCategory::Punctual {
+                        egui::ScrollArea::vertical().max_height(modal_height_dyn - 90.0).show(ui, |ui| {
+                            ui.label("💡 Registra un aliment puntual (ex: àpat de restaurant, estimació per foto d'IA) només per al seguiment d'avui, sense afegir-lo a la base de dades general d'aliments.");
+                            ui.add_space(4.0);
 
-                    ui.add_space(4.0);
-
-                    // Scrollable list of items
-                    let scroll_max_h = if is_mobile { 180.0 } else { 240.0 };
-                    egui::ScrollArea::vertical().max_height(scroll_max_h).show(ui, |ui| {
-                        let q = self.picker_search.to_lowercase();
-                        if self.add_is_dish {
-                            if dishes.is_empty() {
-                                ui.label("Cap plat creat encara. Ves a 'Plats' per crear-ne.");
-                            } else {
-                                for dish in dishes.iter() {
-                                    if !q.is_empty() && !matches_search(&dish.name, &q) {
-                                        continue;
+                            // 1. JSON Import section
+                            ui.group(|ui| {
+                                ui.strong("🤖 Importar des de JSON (Agent IA / Chatbot)");
+                                ui.label("Pots enganxar el text JSON de l'aliment estimat per la teva IA:");
+                                ui.add(
+                                    egui::TextEdit::multiline(&mut self.punctual_json_paste)
+                                        .desired_rows(4)
+                                        .desired_width(f32::INFINITY)
+                                        .hint_text(r#"{"name": "...", "per_unit_nutrition": { "kcal": 450, ... }, "nova_group": "Group3Processed"}"#)
+                                );
+                                ui.horizontal_wrapped(|ui| {
+                                    if ui.button("📥 Omplir Formulari des del JSON").clicked() {
+                                        self.load_punctual_from_json();
                                     }
-                                    let is_sel = self.add_item_id == dish.id;
-                                    ui.horizontal_wrapped(|ui| {
-                                        let nova = dish.derived_nova_group(ingredients);
-                                        let ig = dish.derived_glycemic_index(ingredients);
-                                        let level = dish.derived_glycemic_level(ingredients);
-                                        draw_nova_badge(ui, nova);
-                                        draw_glycemic_badge(ui, level, ig);
-                                        let nut = dish.calculate_total_nutrition(ingredients);
-                                        let label_text = format!("🍲 {} ({:.0} Kcal)", dish.name, nut.kcal);
-
-                                        if ui.selectable_label(is_sel, label_text).clicked() {
-                                            self.add_item_id = dish.id.clone();
-                                            self.add_quantity = 1.0;
-                                        }
-                                    });
+                                    if ui.button("🧹 Netejar JSON").clicked() {
+                                        self.punctual_json_paste.clear();
+                                        self.punctual_json_status = None;
+                                    }
+                                });
+                                if let Some(status) = &self.punctual_json_status {
+                                    if status.starts_with("✅") {
+                                        ui.colored_label(Color32::from_rgb(34, 197, 94), status);
+                                    } else {
+                                        ui.colored_label(Color32::from_rgb(239, 68, 68), status);
+                                    }
                                 }
-                            }
-                        } else {
-                            if ingredients.is_empty() {
-                                ui.label("La base de dades d'aliments està buida.");
-                            } else {
-                                for ing in ingredients.iter() {
-                                    if !q.is_empty() 
-                                        && !matches_search(&ing.name, &q) 
-                                        && !matches_search(ing.brand.as_deref().unwrap_or(""), &q) 
-                                    {
-                                        continue;
+                            });
+
+                            ui.add_space(4.0);
+
+                            // 2. Manual Food Form
+                            ui.group(|ui| {
+                                ui.strong("📝 Formulari de l'Aliment");
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label("Nom:");
+                                    ui.text_edit_singleline(&mut self.punctual_name);
+                                });
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.small("Accents:");
+                                    for c in ["à", "è", "é", "í", "ï", "ò", "ó", "ú", "ü", "ç", "·"] {
+                                        if ui.small_button(c).clicked() {
+                                            self.punctual_name.push_str(c);
+                                        }
                                     }
-                                    let is_sel = self.add_item_id == ing.id;
-                                    ui.horizontal_wrapped(|ui| {
-                                        let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
-                                        let ig = ing.get_glycemic_index();
-                                        let level = ing.get_glycemic_level();
-                                        draw_nova_badge(ui, nova);
-                                        draw_glycemic_badge(ui, level, ig);
-                                        let name_display = if let Some(b) = &ing.brand {
-                                            format!("{} [{}] ({:.0} Kcal)", ing.name, b, ing.per_unit_nutrition.kcal)
-                                        } else {
-                                            format!("{} ({:.0} Kcal)", ing.name, ing.per_unit_nutrition.kcal)
+                                });
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label("Lloc / Marca:");
+                                    ui.text_edit_singleline(&mut self.punctual_brand);
+                                });
+
+                                ui.separator();
+                                ui.label("Valors Nutricionals (per 100g):");
+                                ui.columns(2, |cols| {
+                                    cols[0].horizontal_wrapped(|ui| { ui.label("Kcal:"); ui.add(egui::DragValue::new(&mut self.punctual_kcal).speed(1.0).range(0.0..=900.0)); });
+                                    cols[0].horizontal_wrapped(|ui| { ui.label("Greixos (g):"); ui.add(egui::DragValue::new(&mut self.punctual_fat).speed(0.1).range(0.0..=100.0)); });
+                                    cols[0].horizontal_wrapped(|ui| { ui.label("Greixos Sat (g):"); ui.add(egui::DragValue::new(&mut self.punctual_sat_fat).speed(0.1).range(0.0..=100.0)); });
+                                    cols[0].horizontal_wrapped(|ui| { ui.label("HdC (g):"); ui.add(egui::DragValue::new(&mut self.punctual_carbs).speed(0.1).range(0.0..=100.0)); });
+
+                                    cols[1].horizontal_wrapped(|ui| { ui.label("Sucres (g):"); ui.add(egui::DragValue::new(&mut self.punctual_sugar).speed(0.1).range(0.0..=100.0)); });
+                                    cols[1].horizontal_wrapped(|ui| { ui.label("Fibra (g):"); ui.add(egui::DragValue::new(&mut self.punctual_fiber).speed(0.1).range(0.0..=100.0)); });
+                                    cols[1].horizontal_wrapped(|ui| { ui.label("Proteïna (g):"); ui.add(egui::DragValue::new(&mut self.punctual_protein).speed(0.1).range(0.0..=100.0)); });
+                                    cols[1].horizontal_wrapped(|ui| { ui.label("Sal (g):"); ui.add(egui::DragValue::new(&mut self.punctual_salt).speed(0.01).range(0.0..=100.0)); });
+                                });
+
+                                ui.separator();
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label("Preu per 100g / ració (€):");
+                                    ui.add(egui::DragValue::new(&mut self.punctual_price).speed(0.05).range(0.0..=500.0));
+                                });
+
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label("Classificació NOVA:");
+                                    egui::ComboBox::from_id_salt("punctual_nova_combo")
+                                        .selected_text(self.punctual_nova.short_name_ca())
+                                        .show_ui(ui, |ui| {
+                                            for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {
+                                                ui.selectable_value(&mut self.punctual_nova, group, group.name_ca());
+                                            }
+                                        });
+                                });
+
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label("Índex Glucèmic (IG):");
+                                    ui.add(egui::Slider::new(&mut self.punctual_ig, 0..=100).text("IG"));
+                                    let level = GlycemicLevel::from_ig(self.punctual_ig);
+                                    draw_glycemic_badge(ui, level, self.punctual_ig);
+                                });
+
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label("Ingredients (opcional):");
+                                    ui.text_edit_singleline(&mut self.punctual_ingredients_text);
+                                });
+                            });
+
+                            ui.add_space(4.0);
+
+                            // 3. Quantity to add
+                            ui.group(|ui| {
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.strong("Quantitat a consumir en aquest àpat (g):");
+                                    ui.add(egui::DragValue::new(&mut self.add_quantity).speed(1.0).range(0.1..=3000.0).max_decimals(1));
+                                });
+                            });
+
+                            // 4. Action buttons
+                            ui.separator();
+                            ui.horizontal_wrapped(|ui| {
+                                if ui.button("➕ Afegir Aliment Puntual a l'Àpat").clicked() {
+                                    if !self.punctual_name.trim().is_empty() {
+                                        let mut i = 1;
+                                        let punctual_id = loop {
+                                            let candidate = format!("punctual_{}", i);
+                                            if !punctual_ingredients.iter().any(|ing| ing.id == candidate)
+                                                && !ingredients.iter().any(|ing| ing.id == candidate) {
+                                                break candidate;
+                                            }
+                                            i += 1;
                                         };
 
-                                        if ui.selectable_label(is_sel, name_display).clicked() {
-                                            self.add_item_id = ing.id.clone();
-                                            self.add_quantity = match ing.unit_type {
-                                                UnitType::Per100g => 100.0,
-                                                UnitType::PerUnit { .. } => 1.0,
-                                            };
+                                        let brand_opt = if self.punctual_brand.trim().is_empty() { None } else { Some(self.punctual_brand.trim().to_string()) };
+                                        let ing_text_opt = if self.punctual_ingredients_text.trim().is_empty() { None } else { Some(self.punctual_ingredients_text.trim().to_string()) };
+
+                                        let new_punctual_ing = Ingredient {
+                                            id: punctual_id.clone(),
+                                            name: self.punctual_name.trim().to_string(),
+                                            brand: brand_opt,
+                                            source_url: None,
+                                            unit_type: UnitType::Per100g,
+                                            per_unit_nutrition: NutritionalInfo {
+                                                kcal: self.punctual_kcal,
+                                                fat_g: self.punctual_fat,
+                                                saturated_fat_g: self.punctual_sat_fat,
+                                                carbs_g: self.punctual_carbs,
+                                                sugars_g: self.punctual_sugar,
+                                                fiber_g: self.punctual_fiber,
+                                                protein_g: self.punctual_protein,
+                                                salt_g: self.punctual_salt,
+                                                price_euro: self.punctual_price,
+                                            },
+                                            price_per_pack: None,
+                                            pack_weight_g: None,
+                                            nova_group: Some(self.punctual_nova),
+                                            glycemic_index: Some(self.punctual_ig),
+                                            ingredients_text: ing_text_opt,
+                                        };
+
+                                        punctual_ingredients.push(new_punctual_ing);
+
+                                        let entries = log.daily_menu.meals.entry(meal).or_insert_with(Vec::new);
+                                        entries.push(MealEntry {
+                                            id: format!("{}_{}", punctual_id, entries.len()),
+                                            item_id: punctual_id,
+                                            is_dish: false,
+                                            quantity: self.add_quantity,
+                                        });
+
+                                        self.reset_punctual_form();
+                                        close_modal = true;
+                                    } else {
+                                        self.punctual_json_status = Some("⚠️ Introdueix un nom per a l'aliment puntual abans d'afegir-lo.".to_string());
+                                    }
+                                }
+                                if ui.button("Cancel·lar").clicked() {
+                                    close_modal = true;
+                                }
+                            });
+
+                            // 5. Previous punctual foods
+                            if !punctual_ingredients.is_empty() {
+                                ui.add_space(8.0);
+                                ui.separator();
+                                ui.collapsing(format!("🕒 Aliments Puntuals Anteriors ({})", punctual_ingredients.len()), |ui| {
+                                    ui.small("Fes clic a '📋 Copiar' per carregar les dades al formulari:");
+                                    for p_ing in punctual_ingredients.iter().rev() {
+                                        ui.horizontal_wrapped(|ui| {
+                                            let nova = p_ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                                            draw_nova_badge(ui, nova);
+                                            ui.label(format!("✨ {} ({:.0} kcal)", p_ing.name, p_ing.per_unit_nutrition.kcal));
+                                            if ui.small_button("📋 Copiar").clicked() {
+                                                self.punctual_name = p_ing.name.clone();
+                                                self.punctual_brand = p_ing.brand.clone().unwrap_or_default();
+                                                self.punctual_kcal = p_ing.per_unit_nutrition.kcal;
+                                                self.punctual_fat = p_ing.per_unit_nutrition.fat_g;
+                                                self.punctual_sat_fat = p_ing.per_unit_nutrition.saturated_fat_g;
+                                                self.punctual_carbs = p_ing.per_unit_nutrition.carbs_g;
+                                                self.punctual_sugar = p_ing.per_unit_nutrition.sugars_g;
+                                                self.punctual_fiber = p_ing.per_unit_nutrition.fiber_g;
+                                                self.punctual_protein = p_ing.per_unit_nutrition.protein_g;
+                                                self.punctual_salt = p_ing.per_unit_nutrition.salt_g;
+                                                self.punctual_price = p_ing.per_unit_nutrition.price_euro;
+                                                self.punctual_nova = p_ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                                                self.punctual_ig = p_ing.get_glycemic_index();
+                                                self.punctual_ingredients_text = p_ing.ingredients_text.clone().unwrap_or_default();
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        ui.horizontal(|ui| {
+                            ui.label("🔍 Cercar:");
+                            ui.text_edit_singleline(&mut self.picker_search);
+                        });
+
+                        ui.add_space(4.0);
+
+                        // Scrollable list of items
+                        let scroll_max_h = if is_mobile { 180.0 } else { 240.0 };
+                        egui::ScrollArea::vertical().max_height(scroll_max_h).show(ui, |ui| {
+                            let q = self.picker_search.to_lowercase();
+                            if self.add_is_dish {
+                                if dishes.is_empty() {
+                                    ui.label("Cap plat creat encara. Ves a 'Plats' per crear-ne.");
+                                } else {
+                                    for dish in dishes.iter() {
+                                        if !q.is_empty() && !matches_search(&dish.name, &q) {
+                                            continue;
                                         }
+                                        let is_sel = self.add_item_id == dish.id;
+                                        ui.horizontal_wrapped(|ui| {
+                                            let nova = dish.derived_nova_group(&all_ingredients);
+                                            let ig = dish.derived_glycemic_index(&all_ingredients);
+                                            let level = dish.derived_glycemic_level(&all_ingredients);
+                                            draw_nova_badge(ui, nova);
+                                            draw_glycemic_badge(ui, level, ig);
+                                            let nut = dish.calculate_total_nutrition(&all_ingredients);
+                                            let label_text = format!("🍲 {} ({:.0} Kcal)", dish.name, nut.kcal);
+
+                                            if ui.selectable_label(is_sel, label_text).clicked() {
+                                                self.add_item_id = dish.id.clone();
+                                                self.add_quantity = 1.0;
+                                            }
+                                        });
+                                    }
+                                }
+                            } else {
+                                if ingredients.is_empty() {
+                                    ui.label("La base de dades d'aliments està buida.");
+                                } else {
+                                    for ing in ingredients.iter() {
+                                        if !q.is_empty() 
+                                            && !matches_search(&ing.name, &q) 
+                                            && !matches_search(ing.brand.as_deref().unwrap_or(""), &q) 
+                                        {
+                                            continue;
+                                        }
+                                        let is_sel = self.add_item_id == ing.id;
+                                        ui.horizontal_wrapped(|ui| {
+                                            let nova = ing.nova_group.unwrap_or(NovaGroup::Group1Unprocessed);
+                                            let ig = ing.get_glycemic_index();
+                                            let level = ing.get_glycemic_level();
+                                            draw_nova_badge(ui, nova);
+                                            draw_glycemic_badge(ui, level, ig);
+                                            let name_display = if let Some(b) = &ing.brand {
+                                                format!("{} [{}] ({:.0} Kcal)", ing.name, b, ing.per_unit_nutrition.kcal)
+                                            } else {
+                                                format!("{} ({:.0} Kcal)", ing.name, ing.per_unit_nutrition.kcal)
+                                            };
+
+                                            if ui.selectable_label(is_sel, name_display).clicked() {
+                                                self.add_item_id = ing.id.clone();
+                                                self.add_quantity = match ing.unit_type {
+                                                    UnitType::Per100g => 100.0,
+                                                    UnitType::PerUnit { .. } => 1.0,
+                                                };
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        });
+
+                        ui.separator();
+
+                        if !self.add_item_id.is_empty() {
+                            if self.add_is_dish {
+                                if let Some(dish) = dishes.iter().find(|d| d.id == self.add_item_id) {
+                                    ui.strong(format!("Seleccionat: 🍲 {}", dish.name));
+                                    ui.horizontal_wrapped(|ui| {
+                                        ui.label("Racions:");
+                                        ui.add(egui::DragValue::new(&mut self.add_quantity).speed(0.1).range(0.1..=20.0));
+                                    });
+                                }
+                            } else {
+                                if let Some(ing) = ingredients.iter().find(|i| i.id == self.add_item_id) {
+                                    ui.strong(format!("Seleccionat: 🥗 {}", ing.name));
+                                    let (label_text, speed, max_val) = match ing.unit_type {
+                                        UnitType::Per100g => ("Quantitat (g):", 0.1, 3000.0),
+                                        UnitType::PerUnit { .. } => ("Unitats:", 0.1, 50.0),
+                                    };
+                                    ui.horizontal_wrapped(|ui| {
+                                        ui.label(label_text);
+                                        ui.add(egui::DragValue::new(&mut self.add_quantity).speed(speed).range(0.01..=max_val).max_decimals(2));
                                     });
                                 }
                             }
-                        }
-                    });
-
-                    ui.separator();
-
-                    if !self.add_item_id.is_empty() {
-                        if self.add_is_dish {
-                            if let Some(dish) = dishes.iter().find(|d| d.id == self.add_item_id) {
-                                ui.strong(format!("Seleccionat: 🍲 {}", dish.name));
-                                ui.horizontal_wrapped(|ui| {
-                                    ui.label("Racions:");
-                                    ui.add(egui::DragValue::new(&mut self.add_quantity).speed(0.1).range(0.1..=20.0));
-                                });
-                            }
                         } else {
-                            if let Some(ing) = ingredients.iter().find(|i| i.id == self.add_item_id) {
-                                ui.strong(format!("Seleccionat: 🥗 {}", ing.name));
-                                let (label_text, speed, max_val) = match ing.unit_type {
-                                    UnitType::Per100g => ("Quantitat (g):", 0.1, 3000.0),
-                                    UnitType::PerUnit { .. } => ("Unitats:", 0.1, 50.0),
-                                };
-                                ui.horizontal_wrapped(|ui| {
-                                    ui.label(label_text);
-                                    ui.add(egui::DragValue::new(&mut self.add_quantity).speed(speed).range(0.01..=max_val).max_decimals(2));
-                                });
-                            }
+                            ui.colored_label(Color32::from_rgb(251, 146, 60), "👈 Selecciona un aliment o plat de la llista");
                         }
-                    } else {
-                        ui.colored_label(Color32::from_rgb(251, 146, 60), "👈 Selecciona un aliment o plat de la llista");
-                    }
 
-                    ui.separator();
+                        ui.separator();
 
-                    ui.horizontal(|ui| {
-                        if ui.button("➕ Afegir a l'Àpat").clicked() {
-                            if !self.add_item_id.is_empty() {
-                                let entries = log.daily_menu.meals.entry(meal).or_insert_with(Vec::new);
-                                entries.push(MealEntry {
-                                    id: format!("{}_{}", self.add_item_id, entries.len()),
-                                    item_id: self.add_item_id.clone(),
-                                    is_dish: self.add_is_dish,
-                                    quantity: self.add_quantity,
-                                });
+                        ui.horizontal(|ui| {
+                            if ui.button("➕ Afegir a l'Àpat").clicked() {
+                                if !self.add_item_id.is_empty() {
+                                    let entries = log.daily_menu.meals.entry(meal).or_insert_with(Vec::new);
+                                    entries.push(MealEntry {
+                                        id: format!("{}_{}", self.add_item_id, entries.len()),
+                                        item_id: self.add_item_id.clone(),
+                                        is_dish: self.add_is_dish,
+                                        quantity: self.add_quantity,
+                                    });
+                                    close_modal = true;
+                                }
+                            }
+                            if ui.button("Cancel·lar").clicked() {
                                 close_modal = true;
                             }
-                        }
-                        if ui.button("Cancel·lar").clicked() {
-                            close_modal = true;
-                        }
-                    });
+                        });
+                    }
                 });
 
             if close_modal {

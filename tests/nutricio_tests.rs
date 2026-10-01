@@ -391,9 +391,9 @@ mod tests {
         let res = state.merge_database_from_json(&file_content);
         assert!(res.is_ok(), "Failed to parse base_database.json: {:?}", res.err());
         let (n_ing, n_dish) = res.unwrap();
-        assert_eq!(n_ing, 77);
+        assert_eq!(n_ing, 100);
         assert_eq!(n_dish, 1);
-        assert_eq!(state.ingredients.len(), 77);
+        assert_eq!(state.ingredients.len(), 100);
         assert_eq!(state.dishes.len(), 1);
 
         // Verify that all IDs are unique and start with base_
@@ -415,7 +415,204 @@ mod tests {
         assert_eq!(new_manual_id, "manual_1");
 
         let new_base_id = state.generate_unique_ingredient_id("base");
-        assert_eq!(new_base_id, "base_78");
+        assert_eq!(new_base_id, "base_101");
+    }
+
+    #[test]
+    fn test_parse_punctual_ingredient_json() {
+        use nutricio::views::parse_punctual_ingredient_json;
+
+        // 1. Direct standard base_database format
+        let standard_json = r#"{
+            "id": "ai_est_1",
+            "name": "Paella marinera de restaurant",
+            "brand": "Restaurant El Port",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 165.0,
+                "fat_g": 5.2,
+                "saturated_fat_g": 1.1,
+                "carbs_g": 22.0,
+                "sugars_g": 1.0,
+                "fiber_g": 1.5,
+                "protein_g": 7.5,
+                "salt_g": 1.2,
+                "price_euro": 0.0
+            },
+            "price_per_pack": 18.5,
+            "pack_weight_g": 350.0,
+            "nova_group": "Group3Processed",
+            "glycemic_index": 60,
+            "ingredients_text": "Arròs, sèpia, gambes, sofregit de ceba i tomàquet, brou de peix, safrà"
+        }"#;
+
+        let parsed = parse_punctual_ingredient_json(standard_json).expect("Standard format should parse");
+        assert_eq!(parsed.name, "Paella marinera de restaurant");
+        assert_eq!(parsed.brand.as_deref(), Some("Restaurant El Port"));
+        assert_eq!(parsed.per_unit_nutrition.kcal, 165.0);
+        assert_eq!(parsed.per_unit_nutrition.protein_g, 7.5);
+        assert_eq!(parsed.nova_group, Some(NovaGroup::Group3Processed));
+        assert_eq!(parsed.pack_weight_g, Some(350.0));
+
+        // 2. Wrapped format {"ingredients": [...]}
+        let wrapped_json = r#"{
+            "ingredients": [
+                {
+                    "name": "Tiramisú artesanal",
+                    "per_unit_nutrition": {
+                        "kcal": 290.0,
+                        "fat_g": 16.0,
+                        "saturated_fat_g": 9.0,
+                        "carbs_g": 30.0,
+                        "sugars_g": 22.0,
+                        "fiber_g": 1.0,
+                        "protein_g": 5.0,
+                        "salt_g": 0.2,
+                        "price_euro": 0.0
+                    },
+                    "nova_group": "Group4UltraProcessed"
+                }
+            ]
+        }"#;
+
+        let parsed_wrapped = parse_punctual_ingredient_json(wrapped_json).expect("Wrapped format should parse");
+        assert_eq!(parsed_wrapped.name, "Tiramisú artesanal");
+        assert_eq!(parsed_wrapped.per_unit_nutrition.kcal, 290.0);
+        assert_eq!(parsed_wrapped.nova_group, Some(NovaGroup::Group4UltraProcessed));
+
+        // 3. Lenient AI prompt output format (flat keys, numeric nova)
+        let lenient_json = r#"{
+            "name": "Entrecot a la brasa amb patates",
+            "calories": 240,
+            "protein": 22,
+            "carbs": 12,
+            "fat": 11,
+            "fiber": 1.2,
+            "sugar": 0.5,
+            "nova": 3,
+            "serving_size_g": 400
+        }"#;
+
+        let parsed_lenient = parse_punctual_ingredient_json(lenient_json).expect("Lenient AI format should parse");
+        assert_eq!(parsed_lenient.name, "Entrecot a la brasa amb patates");
+        assert_eq!(parsed_lenient.per_unit_nutrition.kcal, 240.0);
+        assert_eq!(parsed_lenient.per_unit_nutrition.protein_g, 22.0);
+        assert_eq!(parsed_lenient.per_unit_nutrition.carbs_g, 12.0);
+        assert_eq!(parsed_lenient.per_unit_nutrition.fat_g, 11.0);
+        assert_eq!(parsed_lenient.nova_group, Some(NovaGroup::Group3Processed));
+        assert_eq!(parsed_lenient.pack_weight_g, Some(400.0));
+    }
+
+    #[test]
+    fn test_punctual_ingredients_storage_and_daily_journal() {
+        use nutricio::storage::{AppState, load_state_from_json, save_state_to_json};
+
+        let mut state = AppState::empty();
+
+        // 1. Regular database ingredient
+        let regular_food = Ingredient {
+            id: "base_1".to_string(),
+            name: "Arròs".to_string(),
+            brand: None,
+            source_url: None,
+            unit_type: UnitType::Per100g,
+            per_unit_nutrition: NutritionalInfo {
+                kcal: 350.0,
+                fat_g: 1.0,
+                saturated_fat_g: 0.2,
+                carbs_g: 78.0,
+                sugars_g: 0.5,
+                fiber_g: 1.0,
+                protein_g: 7.0,
+                salt_g: 0.01,
+                price_euro: 0.2,
+            },
+            price_per_pack: None,
+            pack_weight_g: None,
+            nova_group: Some(NovaGroup::Group1Unprocessed),
+            glycemic_index: Some(70),
+            ingredients_text: None,
+        };
+        state.ingredients.push(regular_food);
+
+        // 2. Add punctual restaurant food into separate punctual_ingredients list
+        let punctual_id = state.generate_unique_punctual_id();
+        assert_eq!(punctual_id, "punctual_1");
+
+        let punctual_food = Ingredient {
+            id: punctual_id.clone(),
+            name: "Plat combinat restaurant (estimat)".to_string(),
+            brand: Some("Gourmet Bar".to_string()),
+            source_url: None,
+            unit_type: UnitType::Per100g,
+            per_unit_nutrition: NutritionalInfo {
+                kcal: 200.0,
+                fat_g: 10.0,
+                saturated_fat_g: 3.0,
+                carbs_g: 15.0,
+                sugars_g: 2.0,
+                fiber_g: 2.0,
+                protein_g: 12.0,
+                salt_g: 1.5,
+                price_euro: 0.0,
+            },
+            price_per_pack: Some(15.0),
+            pack_weight_g: Some(300.0),
+            nova_group: Some(NovaGroup::Group3Processed),
+            glycemic_index: Some(55),
+            ingredients_text: Some("Pollastre rostit, patates al forn, amanida".to_string()),
+        };
+        state.punctual_ingredients.push(punctual_food);
+
+        // Verify isolation: ingredients has 1, punctual_ingredients has 1
+        assert_eq!(state.ingredients.len(), 1);
+        assert_eq!(state.punctual_ingredients.len(), 1);
+
+        // Verify all_ingredients combines both
+        let all = state.all_ingredients();
+        assert_eq!(all.len(), 2);
+        assert_eq!(state.find_ingredient("base_1").unwrap().name, "Arròs");
+        assert_eq!(state.find_ingredient("punctual_1").unwrap().name, "Plat combinat restaurant (estimat)");
+
+        // 3. Add meal entry referencing punctual food in DailyLog
+        {
+            let daily_log = state.get_or_create_daily_log("2026-10-01", "Dijous");
+            let lunch = daily_log.daily_menu.meals.entry(MealType::Lunch).or_default();
+            lunch.push(MealEntry {
+                id: "entry_1".to_string(),
+                item_id: "punctual_1".to_string(),
+                is_dish: false,
+                quantity: 300.0, // 300g at 200 kcal/100g = 600 kcal
+            });
+        }
+
+        // Compute nutrition using all_ingredients
+        let all_ings = state.all_ingredients();
+        let daily_log = state.daily_journal.iter().find(|l| l.date == "2026-10-01").unwrap();
+        let total = daily_log.daily_menu.calculate_total_nutrition(&all_ings, &state.dishes);
+        assert!((total.kcal - 600.0).abs() < 1e-4, "Expected 600 kcal, got {}", total.kcal);
+        assert!((total.protein_g - 36.0).abs() < 1e-4, "Expected 36g protein, got {}", total.protein_g);
+        assert!((total.fat_g - 30.0).abs() < 1e-4, "Expected 30g fat, got {}", total.fat_g);
+        assert!((total.carbs_g - 45.0).abs() < 1e-4, "Expected 45g carbs, got {}", total.carbs_g);
+
+        // 4. Test serialization and deserialization
+        let json_str = save_state_to_json(&state).expect("State should serialize to JSON");
+        assert!(json_str.contains("punctual_ingredients"));
+        assert!(json_str.contains("punctual_1"));
+
+        let loaded: AppState = load_state_from_json(&json_str).expect("State should deserialize from JSON");
+        assert_eq!(loaded.ingredients.len(), 1);
+        assert_eq!(loaded.punctual_ingredients.len(), 1);
+        assert_eq!(loaded.punctual_ingredients[0].id, "punctual_1");
+        assert_eq!(loaded.punctual_ingredients[0].name, "Plat combinat restaurant (estimat)");
+        assert_eq!(loaded.daily_journal.len(), 1);
+
+        // 5. Test alias support: JSON with "punctual" key instead of "punctual_ingredients"
+        let alias_json = json_str.replace("\"punctual_ingredients\":", "\"punctual\":");
+        let loaded_alias: AppState = load_state_from_json(&alias_json).expect("State with alias 'punctual' should deserialize");
+        assert_eq!(loaded_alias.punctual_ingredients.len(), 1);
+        assert_eq!(loaded_alias.punctual_ingredients[0].id, "punctual_1");
     }
 }
 

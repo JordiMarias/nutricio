@@ -4,8 +4,9 @@ use crate::models::*;
 pub fn generate_daily_report_html(state: &AppState, day: &DailyMenu, main_title: &str, subtitle: &str) -> String {
     let mut html = String::new();
 
-    let day_nut = day.calculate_total_nutrition(&state.ingredients, &state.dishes);
-    let total_cg = day.calculate_total_glycemic_load(&state.ingredients, &state.dishes);
+    let all_ingredients = state.all_ingredients();
+    let day_nut = day.calculate_total_nutrition(&all_ingredients, &state.dishes);
+    let total_cg = day.calculate_total_glycemic_load(&all_ingredients, &state.dishes);
     let goals = &state.goals;
 
     html.push_str(r#"<!DOCTYPE html>
@@ -100,12 +101,12 @@ pub fn generate_daily_report_html(state: &AppState, day: &DailyMenu, main_title:
             for entry in entries {
                 if entry.is_dish {
                     if let Some(dish) = state.dishes.iter().find(|d| d.id == entry.item_id) {
-                        let nut = dish.calculate_total_nutrition(&state.ingredients).scale(entry.quantity);
+                        let nut = dish.calculate_total_nutrition(&all_ingredients).scale(entry.quantity);
                         meal_nut.add(&nut);
 
-                        let nova = dish.derived_nova_group(&state.ingredients);
-                        let ig = dish.derived_glycemic_index(&state.ingredients);
-                        let cg = dish.calculate_glycemic_load(&state.ingredients) * entry.quantity;
+                        let nova = dish.derived_nova_group(&all_ingredients);
+                        let ig = dish.derived_glycemic_index(&all_ingredients);
+                        let cg = dish.calculate_glycemic_load(&all_ingredients) * entry.quantity;
 
                         let nova_class = match nova {
                             NovaGroup::Group1Unprocessed => "nova-1",
@@ -121,7 +122,7 @@ pub fn generate_daily_report_html(state: &AppState, day: &DailyMenu, main_title:
                         ));
                     }
                 } else {
-                    if let Some(ing) = state.ingredients.iter().find(|i| i.id == entry.item_id) {
+                    if let Some(ing) = all_ingredients.iter().find(|i| i.id == entry.item_id) {
                         let nut = ing.calculate_nutrition(entry.quantity);
                         meal_nut.add(&nut);
 
@@ -231,7 +232,7 @@ pub fn generate_daily_report_html(state: &AppState, day: &DailyMenu, main_title:
         <h3>🏷️ Classificació i Qualitat NOVA</h3>
         <ul>
 "#);
-    let nova_map = day.nova_breakdown(&state.ingredients, &state.dishes);
+    let nova_map = day.nova_breakdown(&all_ingredients, &state.dishes);
     let total_k = day_nut.kcal;
 
     for group in [NovaGroup::Group1Unprocessed, NovaGroup::Group2ProcessedIngredient, NovaGroup::Group3Processed, NovaGroup::Group4UltraProcessed] {

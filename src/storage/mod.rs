@@ -21,6 +21,8 @@ pub struct AppState {
     pub goals: NutritionalGoals,
     #[serde(default)]
     pub daily_journal: Vec<DailyLog>,
+    #[serde(default, alias = "punctual", alias = "aliments_puntuals")]
+    pub punctual_ingredients: Vec<Ingredient>,
 }
 
 impl Default for AppState {
@@ -37,6 +39,7 @@ impl AppState {
             weekly_menu: WeeklyMenu::default(),
             goals: NutritionalGoals::default(),
             daily_journal: Vec::new(),
+            punctual_ingredients: Vec::new(),
         }
     }
 
@@ -44,6 +47,7 @@ impl AppState {
     pub fn is_empty(&self) -> bool {
         self.ingredients.is_empty()
             && self.dishes.is_empty()
+            && self.punctual_ingredients.is_empty()
             && self.weekly_menu.days.iter().all(|d| d.meals.values().all(|entries| entries.is_empty()))
             && self.daily_journal.iter().all(|l| l.daily_menu.meals.values().all(|entries| entries.is_empty()))
     }
@@ -56,11 +60,37 @@ impl AppState {
         self.daily_journal.iter_mut().find(|l| l.date == date_str).unwrap()
     }
 
+    #[allow(dead_code)]
+    pub fn find_ingredient(&self, id: &str) -> Option<&Ingredient> {
+        self.ingredients.iter().find(|i| i.id == id)
+            .or_else(|| self.punctual_ingredients.iter().find(|i| i.id == id))
+    }
+
+    pub fn all_ingredients(&self) -> Vec<Ingredient> {
+        let mut list = self.ingredients.clone();
+        list.extend(self.punctual_ingredients.iter().cloned());
+        list
+    }
+
     pub fn generate_unique_ingredient_id(&self, prefix: &str) -> String {
         let mut i = 1;
         loop {
             let candidate = format!("{}_{}", prefix, i);
-            if !self.ingredients.iter().any(|ing| ing.id == candidate) {
+            if !self.ingredients.iter().any(|ing| ing.id == candidate)
+                && !self.punctual_ingredients.iter().any(|ing| ing.id == candidate) {
+                return candidate;
+            }
+            i += 1;
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn generate_unique_punctual_id(&self) -> String {
+        let mut i = 1;
+        loop {
+            let candidate = format!("punctual_{}", i);
+            if !self.punctual_ingredients.iter().any(|ing| ing.id == candidate)
+                && !self.ingredients.iter().any(|ing| ing.id == candidate) {
                 return candidate;
             }
             i += 1;
@@ -86,6 +116,7 @@ impl AppState {
             weekly_menu: seed::get_seed_weekly_menu(),
             goals: NutritionalGoals::default(),
             daily_journal: Vec::new(),
+            punctual_ingredients: Vec::new(),
         }
     }
 
@@ -131,35 +162,35 @@ impl AppState {
             serde_json::Value::Object(map) => {
                 // Comprova claus d'ingredients (català, anglès o castellà)
                 if let Some(ing_val) = map.get("ingredients").or_else(|| map.get("aliments")).or_else(|| map.get("alimentos")) {
-                    if let Ok(ings) = serde_json::from_value::<Vec<Ingredient>>(ing_val.clone()) {
-                        for incoming_ing in ings {
-                            if let Some(existing) = self.ingredients.iter_mut().find(|i| {
-                                (!incoming_ing.id.is_empty() && i.id == incoming_ing.id) 
-                                || (!incoming_ing.name.trim().is_empty() && i.name.trim().eq_ignore_ascii_case(incoming_ing.name.trim()))
-                            }) {
-                                *existing = incoming_ing;
-                            } else {
-                                self.ingredients.push(incoming_ing);
-                            }
-                            ing_count += 1;
+                    let ings: Vec<Ingredient> = serde_json::from_value(ing_val.clone())
+                        .map_err(|e| format!("Error en deserialitzar els ingredients: {}", e))?;
+                    for incoming_ing in ings {
+                        if let Some(existing) = self.ingredients.iter_mut().find(|i| {
+                            (!incoming_ing.id.is_empty() && i.id == incoming_ing.id) 
+                            || (!incoming_ing.name.trim().is_empty() && i.name.trim().eq_ignore_ascii_case(incoming_ing.name.trim()))
+                        }) {
+                            *existing = incoming_ing;
+                        } else {
+                            self.ingredients.push(incoming_ing);
                         }
+                        ing_count += 1;
                     }
                 }
 
                 // Comprova claus de plats / receptes (català, anglès o castellà)
                 if let Some(dish_val) = map.get("dishes").or_else(|| map.get("plats")).or_else(|| map.get("platos")).or_else(|| map.get("receptes")) {
-                    if let Ok(dishes) = serde_json::from_value::<Vec<Dish>>(dish_val.clone()) {
-                        for incoming_dish in dishes {
-                            if let Some(existing) = self.dishes.iter_mut().find(|d| {
-                                (!incoming_dish.id.is_empty() && d.id == incoming_dish.id)
-                                || (!incoming_dish.name.trim().is_empty() && d.name.trim().eq_ignore_ascii_case(incoming_dish.name.trim()))
-                            }) {
-                                *existing = incoming_dish;
-                            } else {
-                                self.dishes.push(incoming_dish);
-                            }
-                            dish_count += 1;
+                    let dishes: Vec<Dish> = serde_json::from_value(dish_val.clone())
+                        .map_err(|e| format!("Error en deserialitzar els plats: {}", e))?;
+                    for incoming_dish in dishes {
+                        if let Some(existing) = self.dishes.iter_mut().find(|d| {
+                            (!incoming_dish.id.is_empty() && d.id == incoming_dish.id)
+                            || (!incoming_dish.name.trim().is_empty() && d.name.trim().eq_ignore_ascii_case(incoming_dish.name.trim()))
+                        }) {
+                            *existing = incoming_dish;
+                        } else {
+                            self.dishes.push(incoming_dish);
                         }
+                        dish_count += 1;
                     }
                 }
             }
@@ -189,6 +220,8 @@ impl AppState {
                         }
                         dish_count += 1;
                     }
+                } else {
+                    return Err("No s'ha pogut interpretar la llista com a ingredients ni com a plats".to_string());
                 }
             }
             _ => return Err("El format ha de ser un document JSON (objecte o llista)".to_string()),

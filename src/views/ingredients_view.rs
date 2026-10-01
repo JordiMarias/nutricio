@@ -67,7 +67,7 @@ impl Default for IngredientsView {
             scraping_error: None,
             scraping_success: None,
 
-            db_sync_url: "https://raw.githubusercontent.com/JordiMarias/nutricio/main/base_database.json".to_string(),
+            db_sync_url: "https://raw.githubusercontent.com/JordiMarias/basedades-nutricional/refs/heads/main/base_database.json".to_string(),
             db_json_paste: String::new(),
             db_sync_status: None,
             is_syncing: false,
@@ -652,7 +652,11 @@ impl IngredientsView {
                         
                         ui.horizontal_wrapped(|ui| {
                             ui.label("Enllaç URL:");
-                            ui.text_edit_singleline(&mut self.db_sync_url);
+                            ui.add(
+                                egui::TextEdit::singleline(&mut self.db_sync_url)
+                                    .hint_text("https://raw.githubusercontent.com/JordiMarias/basedades-nutricional/refs/heads/main/base_database.json")
+                                    .desired_width(550.0)
+                            );
                         });
 
                         ui.add_space(4.0);
@@ -666,7 +670,11 @@ impl IngredientsView {
                                 self.is_syncing = true;
                                 self.db_sync_status = None;
                                 let tx = self.pending_db_tx.clone();
-                                let url = self.db_sync_url.trim().to_string();
+                                let url = if self.db_sync_url.trim().is_empty() {
+                                    "https://raw.githubusercontent.com/JordiMarias/basedades-nutricional/refs/heads/main/base_database.json".to_string()
+                                } else {
+                                    self.db_sync_url.trim().to_string()
+                                };
 
                                 #[cfg(target_arch = "wasm32")]
                                 {
