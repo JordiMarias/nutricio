@@ -2242,6 +2242,98 @@
             "nova_group": "Group3Processed",
             "glycemic_index": 68,
             "ingredients_text": "Farina de blat, aigua, massa mare natural, llevat biològic, sal."
+        },
+        {
+            "id": "base_97",
+            "name": "Cafè amb llet de màquina automàtica (sucre nivell mitjà)",
+            "brand": "Arbitrade Vending",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 44.0,
+                "fat_g": 0.2,
+                "saturated_fat_g": 0.15,
+                "carbs_g": 8.0,
+                "sugars_g": 7.8,
+                "fiber_g": 0.1,
+                "protein_g": 2.5,
+                "salt_g": 0.10,
+                "price_euro": 0.50
+            },
+            "price_per_pack": 0.70,
+            "pack_weight_g": 140.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 62,
+            "ingredients_text": "Aigua, cafè mòlt d'extracció natural, llet desnatada en pols (llet desnatada, lactosa, sèrum de mantega en pols, antiaglomerant E-551), sucre blanc refinat."
+        },
+        {
+            "id": "base_98",
+            "name": "BONPREU Beguda d'arròs UHT",
+            "brand": "BONPREU",
+            "source_url": "https://www.compraonline.bonpreuesclat.cat/products/bonpreu-beguda-d-arr%C3%B2s-uht/11774",
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 54.0,
+                "fat_g": 1.0,
+                "saturated_fat_g": 0.1,
+                "carbs_g": 11.0,
+                "sugars_g": 4.7,
+                "fiber_g": 0.0,
+                "protein_g": 0.0,
+                "salt_g": 0.07,
+                "price_euro": 0.10500000000000001
+            },
+            "price_per_pack": 1.05,
+            "pack_weight_g": 1000.0,
+            "nova_group": "Group4UltraProcessed",
+            "glycemic_index": 85,
+            "ingredients_text": "aigua, arròs (15 %), oli vegetal de gira-sol, sal marina, vitamina A, vitamina B12 i vitamina D."
+        },
+        {
+            "id": "base_99",
+            "name": "Sucre blanc",
+            "brand": "Genèric",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 400.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 100.0,
+                "sugars_g": 100.0,
+                "fiber_g": 0.0,
+                "protein_g": 0.0,
+                "salt_g": 0.0,
+                "price_euro": 0.10
+            },
+            "price_per_pack": 1.00,
+            "pack_weight_g": 1000.0,
+            "nova_group": "Group2CulinaryIngredients",
+            "glycemic_index": 65,
+            "ingredients_text": "Sucre blanc refinat (sacarosa)."
+        },
+        {
+            "id": "base_100",
+            "name": "Sal marina",
+            "brand": "Genèric",
+            "source_url": null,
+            "unit_type": "Per100g",
+            "per_unit_nutrition": {
+                "kcal": 0.0,
+                "fat_g": 0.0,
+                "saturated_fat_g": 0.0,
+                "carbs_g": 0.0,
+                "sugars_g": 0.0,
+                "fiber_g": 0.0,
+                "protein_g": 0.0,
+                "salt_g": 99.5,
+                "price_euro": 0.04
+            },
+            "price_per_pack": 0.40,
+            "pack_weight_g": 1000.0,
+            "nova_group": "Group2CulinaryIngredients",
+            "glycemic_index": 0,
+            "ingredients_text": "Sal marina (clorur sòdic), antiaglomerant E-535."
         }
     ],
     "dishes": [
