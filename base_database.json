@@ -2308,7 +2308,7 @@
             },
             "price_per_pack": 1.00,
             "pack_weight_g": 1000.0,
-            "nova_group": "Group2CulinaryIngredients",
+            "nova_group": "Group2ProcessedIngredient",
             "glycemic_index": 65,
             "ingredients_text": "Sucre blanc refinat (sacarosa)."
         },
@@ -2331,7 +2331,7 @@
             },
             "price_per_pack": 0.40,
             "pack_weight_g": 1000.0,
-            "nova_group": "Group2CulinaryIngredients",
+            "nova_group": "Group2ProcessedIngredient",
             "glycemic_index": 0,
             "ingredients_text": "Sal marina (clorur sòdic), antiaglomerant E-535."
         }
